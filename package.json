@@ -1,18 +1,14 @@
 {
-  "name": "bloom-app",
-  "version": "1.0.0",
-  "main": "index.js",
-  "dependencies": {
-    "expo": "~57.0.4",
-    "expo-status-bar": "~57.0.0",
-    "react": "19.2.3",
-    "react-native": "0.86.0"
-  },
+  "name": "bloom-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
-  },
-  "private": true
+    "mobile": "npm run --workspace=apps/mobile",
+    "android": "npm run android --workspace=apps/mobile",
+    "ios": "npm run ios --workspace=apps/mobile",
+    "web": "npm run dev --workspace=apps/web"
+  }
 }
