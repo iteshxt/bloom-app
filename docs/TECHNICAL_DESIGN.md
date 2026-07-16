@@ -1,48 +1,47 @@
 # TECHNICAL_DESIGN.md
 
-# Bloom --- Technical Design Specification
+# Bloom — Technical Design Specification
 
-Version: 1.0
+**Version**: 2.0 (Updated Stack)
+**Scope**: Client-Server Architecture via Vercel Next.js API & Supabase
 
 ---
 
 ## 1. System Architecture
 
-Bloom is a client-server application built with a mobile-first philosophy, utilizing React Native (Expo) on the frontend and Supabase (PostgreSQL + Realtime + Edge Functions) on the backend.
+Bloom uses a decoupled middle-tier architecture. The React Native mobile client never queries the database directly; instead, it communicates via standard HTTP REST endpoints with a Next.js serverless API hosted on Vercel. Vercel acts as the secure intermediary that interacts with the Supabase database.
 
 ```mermaid
 graph TD
     Client[React Native / Expo App]
+    subgraph Vercel
+        API[Next.js Serverless API routes /v1/...]
+    end
     subgraph Supabase BaaS
-        Auth[Supabase Auth / Google Sign-In]
+        Auth[Supabase Auth / Email Signup]
         DB[(PostgreSQL Database)]
-        Realtime[Supabase Realtime System]
-        Edge[Edge Functions / LeetCode Sync]
         Storage[Supabase Storage / Avatars]
     end
 
-    Client -->|Authentication| Auth
-    Client -->|SQL / RLS Queries| DB
-    Client -->|Websockets Subscription| Realtime
-    Client -->|HTTPS REST| Edge
+    Client -->|HTTPS REST Request| API
+    Client -->|Authentication Session| Auth
+    API -->|Secure Server-Side SQL| DB
     Client -->|CDN Upload/Download| Storage
-    Edge -->|Poll API| LeetCode[LeetCode GraphQL API]
+    API -->|Fetch User Stats| LeetCode[LeetCode GraphQL API]
 ```
 
 ### 1.1 Frontend Architecture
 
-The mobile app uses a **Feature-Based Modular Architecture** combined with React Hooks for state management:
+* **Framework**: React Native + Expo (TypeScript).
+* **Styling**: TailwindCSS (NativeWind).
+* **State Management**: React Context API (e.g. `AuthContext`, `FocusContext`, `MissionsContext`) providing modular, lightweight state containers.
+* **UI Controls**: Fully custom premium components (curves, custom sliders, custom checklist views, pulsing animations). **No React Native Paper / Material UI component libraries**.
 
-- **Components**: Pure presentational MD3 components.
-- **Hooks**: Domain-specific logic (e.g., `useFocusTimer`, `usePresence`, `useMissions`).
-- **Services**: Client modules interacting with external APIs (Supabase client, LeetCode client).
-- **Contexts**: Global app states (e.g., `AuthContext`, `ThemeContext`, `PartnerContext`).
+### 1.2 Backend Architecture (Vercel + Supabase)
 
-### 1.2 Backend Architecture (Supabase)
-
-- **Database**: PostgreSQL with Row Level Security (RLS) rules verifying that users can only read/write their own data and their connected partner's data.
-- **Realtime**: WebSocket channels tracking partner presence, focus timer status, and daily mission completions.
-- **Edge Functions**: Serverless TypeScript functions executing heavy/cron tasks (e.g., LeetCode daily sync, weekly report compilation).
+* **API Layer (Vercel)**: Next.js API routes (e.g. `bloom-api.vercel.app/v1/...`) handle authentication routing, business logic, LeetCode data resolution, and database transactions.
+* **Database (Supabase)**: PostgreSQL database storing user records, missions, focus history, calendar events, reflections, and mood telemetry.
+* **Realtime Sync**: Light presence states and partner notes are stored in dedicated database tables. The mobile app fetches updates using lightweight REST polling/state calls (avoiding high-maintenance WebSocket servers).
 
 ---
 
@@ -77,16 +76,16 @@ create table public.partner_links (
     constraint no_self_link check (user_one_id <> user_two_id)
 );
 
--- 3. MISSIONS
+-- 3. MISSIONS (Habits)
 create table public.missions (
     id uuid default uuid_generate_v4() primary key,
     user_id uuid references public.profiles(id) on delete cascade not null,
     name text not null,
     category text not null,
     goal_value integer not null,
-    unit text not null, -- 'boolean', 'count', 'minutes', etc.
+    unit text not null, -- 'boolean', 'count', 'minutes'
     verification_type text check (verification_type in ('manual', 'timer', 'leetcode')) not null,
-    repeat_schedule text default 'daily' not null, -- 'daily', 'weekly', 'custom'
+    repeat_schedule text default 'daily' not null,
     color_hex text not null,
     is_archived boolean default false not null,
     created_at timestamp with time zone default timezone('utc'::text, now()) not null
@@ -111,11 +110,14 @@ create table public.focus_sessions (
     start_time timestamp with time zone not null,
     end_time timestamp with time zone,
     duration_seconds integer default 0 not null,
-    category text,
+    category text not null,
+    notes text,
+    mood_rating integer check (mood_rating between 1 and 5),
+    distractions text,
     is_completed boolean default false not null
 );
 
--- 6. PRESENCE STATE (Ephemeral & tracked via Realtime / DB fallback)
+-- 6. PRESENCE STATE (Polled / updated REST states)
 create table public.presence_states (
     user_id uuid references public.profiles(id) on delete cascade primary key,
     status text check (status in ('offline', 'online', 'studying', 'break', 'busy', 'sleeping')) not null,
@@ -134,14 +136,12 @@ create table public.calendar_events (
     created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 8. REFLECTIONS
+-- 8. REFLECTIONS (Thoughts of the Day)
 create table public.reflections (
     id uuid default uuid_generate_v4() primary key,
-    user_id uuid references public.profiles(id) on delete cascade not null,
+    user_id uuid references public.profiles(id) not null,
     reflection_date date not null,
-    thought_of_day text,
-    wins text,
-    challenges text,
+    content text not null,
     created_at timestamp with time zone default timezone('utc'::text, now()) not null,
     constraint unique_reflection_day unique (user_id, reflection_date)
 );
@@ -152,8 +152,7 @@ create table public.mood_entries (
     user_id uuid references public.profiles(id) on delete cascade not null,
     entry_date date not null,
     mood_score integer check (mood_score between 1 and 5) not null,
-    distraction_tags text[], -- Array of strings (e.g. ['social_media', 'overslept'])
-    custom_notes text,
+    distractions text[], -- Array of logged distractions
     created_at timestamp with time zone default timezone('utc'::text, now()) not null,
     constraint unique_mood_day unique (user_id, entry_date)
 );
@@ -168,194 +167,90 @@ create table public.streaks (
 );
 ```
 
-### 2.2 Entity Relationship Diagram (ERD)
+---
 
-```mermaid
-erDiagram
-    profiles ||--o| streaks : "has one"
-    profiles ||--o| presence_states : "has one status"
-    profiles ||--o{ partner_links : "associates with"
-    profiles ||--o{ missions : "owns"
-    profiles ||--o{ focus_sessions : "logs"
-    profiles ||--o{ calendar_events : "creates"
-    profiles ||--o{ reflections : "writes"
-    profiles ||--o{ mood_entries : "submits"
-  
-    missions ||--o{ mission_completions : "records"
-```
+## 3. API Endpoints Specification
 
-### 2.3 Indexes & Performance Optimization
+Vercel hosts the Next.js API server, accepting JSON payloads and verifying Supabase auth tokens in headers.
 
-To guarantee swift execution sub-2 seconds:
+### 3.1 Authentication & Profile
 
-- **Missions queries**: `create index idx_missions_user_id on public.missions(user_id) where is_archived = false;`
-- **Mission completions by date**: `create index idx_mission_completions_date on public.mission_completions(completed_date, mission_id);`
-- **Focus sessions history**: `create index idx_focus_sessions_user_time on public.focus_sessions(user_id, start_time desc);`
-- **Partner checks**: `create index idx_partner_links_lookup on public.partner_links(user_one_id, user_two_id);`
+* `POST /v1/auth/signup`: Creates auth login credentials in Supabase.
+* `POST /v1/auth/login`: Signs into Supabase using email/password.
+* `GET /v1/profile`: Returns the profile information for the authenticated user (themes, freeze tokens, custom settings).
+* `PUT /v1/profile`: Updates current user profile configurations (display name, avatar URL, LeetCode username).
 
-### 2.4 Row Level Security (RLS) Policy Example
+### 3.2 Partner Linking
 
-Every table restricts access to the user and their validated partner:
+* `POST /v1/partner/invite`: Generates a unique 6-character connect code linked to the user's account.
+* `POST /v1/partner/connect`: Submits a partner code to link two user profiles as active partners in `partner_links`.
+* `POST /v1/partner/disconnect`: Dissolves an active link between partners.
+* `GET /v1/partner/status`: Returns current focus status, progress percentage, active streak, and latest reflection preview of the connected partner.
 
-```sql
--- Helper function to fetch partner ID
-create or replace function public.get_partner_id(user_uuid uuid)
-returns uuid as $$
-  select case 
-    when user_one_id = user_uuid then user_two_id
-    else user_one_id
-  end
-  from public.partner_links
-  where (user_one_id = user_uuid or user_two_id = user_uuid) and status = 'active'
-  limit 1;
-$$ language sql security definer;
+### 3.3 Daily Missions & Habits
 
--- Enable RLS on Missions
-alter table public.missions enable row level security;
+* `GET /v1/missions`: Retrieves the current user's active custom habits, daily completions, and partner statistics.
+* `POST /v1/missions`: Creates a new mission entry (unit values, categories, color hashes).
+* `PUT /v1/missions/:id`: Updates parameters of a mission or flags it as archived.
+* `POST /v1/missions/:id/toggle`: Toggles completion of a mission for a specific date. Increments completions and validates streak conditions.
+* `POST /v1/missions/leetcode/verify`: Triggers a server-side GraphQL request to LeetCode API to fetch today's solved problems, auto-completing DSA missions on success.
 
--- Policy: Select missions (own + partner)
-create policy "Users can view own and partner missions" on public.missions
-    for select using (
-        auth.uid() = user_id or 
-        user_id = public.get_partner_id(auth.uid())
-    );
+### 3.4 Focus Sessions (Pomodoro)
 
--- Policy: Write missions (own only)
-create policy "Users can modify own missions" on public.missions
-    for all using (auth.uid() = user_id);
-```
+* `POST /v1/focus/session/start`: Registers that the user has started a focus session (sets status in `presence_states` to `studying`).
+* `POST /v1/focus/session/update`: Periodically called during focus to verify foreground active state. Pauses/flags automatically if absent.
+* `POST /v1/focus/session/complete`: Logs focus statistics to `focus_sessions` (duration, distractions, mood rating, written review comments).
+* `GET /v1/focus/history`: Returns focus sessions logs, averages, daily stats, and weekly bar graph matrices.
+
+### 3.5 Calendar
+
+* `GET /v1/calendar`: Returns color-coded events and tasks for the specified month.
+* `POST /v1/calendar/event`: Schedules a new calendar entry (type, title, description, color code, deadline date).
+* `DELETE /v1/calendar/event/:id`: Removes a scheduled task or event.
+
+### 3.6 Reflections (Journal)
+
+* `GET /v1/reflections`: Fetches historical list of logged notes/daily thoughts.
+* `POST /v1/reflections`: Saves a daily reflection note entry.
+
+### 3.7 Mood, Telemetry & Streaks
+
+* `POST /v1/mood/checkin`: Logs the daily check-in scale values.
+* `POST /v1/mood/distractions`: Submits distraction logs (*"What distracted you?"*).
+* `POST /v1/streak/freeze`: Spends a freeze token to protect the streak when a day is missed.
+* `GET /v1/themes/unlocked`: Evaluates milestone metrics and returns list of unlocked dashboard stylesheet themes.
 
 ---
 
-## 3. Screen Navigation Flows & UI States
+## 4. Focus Timer Background Pause
 
-The navigation layout uses **React Navigation v6** (`@react-navigation/native` & `@react-navigation/bottom-tabs`).
-
-```mermaid
-graph TD
-    Splash[Splash Screen] --> CheckAuth{Is Authenticated?}
-    CheckAuth -->|No| Login[Google Login Screen]
-    CheckAuth -->|Yes| CheckPartner{Has Active Partner?}
-  
-    Login --> Register[Profile Creation]
-    Register --> CheckPartner
-  
-    CheckPartner -->|No| InviteScreen[Partner Invite & Setup]
-    CheckPartner -->|Yes| MainTabs[Main App Navigation Bar]
-  
-    subgraph Main Navigation Tabs
-        MainTabs --> TabHome[Home Screen]
-        MainTabs --> TabFocus[Focus Timer]
-        MainTabs --> TabCalendar[Calendar Screen]
-        MainTabs --> TabInsights[Insights Dashboard]
-        MainTabs --> TabProfile[Profile & Settings]
-    end
-```
-
-### 3.1 Standard UI State Patterns
-
-Every feature follows standardized MD3 layout responses:
-
-1. **Loading State**:
-   - Use `ActivityIndicator` (MD3 Circular Progress indicator).
-   - Skeletal components (`react-native-masked-view` + Shimmer) for cards to match component outlines.
-2. **Error Flow**:
-   - Display full-screen error component with a supportive illustration.
-   - Provide clear, friendly error explanations and a "Retry" button.
-3. **Empty State**:
-   - Clear graphical representations with supportive prompts and secondary actions.
-   - Example: On Focus screen, if no history: "Time to start! Begin your first deep work session." with a green filled button.
-
----
-
-## 4. Detailed Feature Implementations
-
-### 4.1 Presence & AppState (Realtime Sync)
-
-The presence system uses Supabase Realtime Channels to broadcast updates.
+To prevent "fake" focus tracking, the app utilizes the React Native **AppState API** to track when the application enters the background.
 
 ```mermaid
 sequenceDiagram
     participant App as React Native Client
-    participant AppState as AppState Listener
-    participant DB as Supabase Presence / DB
-    participant Partner as Partner Client
+    participant AppState as AppState Event Listener
+    participant API as Vercel API
+    participant DB as Supabase DB
 
-    App->>AppState: Listen to changes (active, background)
-    Note over AppState: User backgrounded app
-    AppState->>App: Event: 'background'
-    App->>DB: Send Broadcast: status = 'offline' / 'idle'
-    DB-->>Partner: Broadcast message 'offline' received
-    Note over AppState: User returns to foreground
-    AppState->>App: Event: 'active'
-    App->>DB: Send Broadcast: status = 'online'
-    DB-->>Partner: Broadcast message 'online' received
+    Note over App: Focus timer runs active in foreground
+    AppState->>App: Event: 'background' (User left app)
+    App->>App: Pause local timer countdown
+    App->>API: POST /v1/focus/session/update (status: paused/idle)
+    API->>DB: Write idle state to presence_states
+  
+    Note over App: User returns to app later
+    AppState->>App: Event: 'active' (User returned)
+    App->>App: Show custom dialog: "Continue session?"
+    App->>App: Resume local timer on confirmation
+    App->>API: POST /v1/focus/session/update (status: studying)
+    API->>DB: Write studying state to presence_states
 ```
 
-- **Inactive/Background States**: Triggered immediately upon state changes. If user is in Focus Mode, transitions status to "offline" and pauses the local timer.
-
-### 4.2 Focus Timer (Foreground Lock)
-
-To enforce genuine focus, the timer runs local state and hooks directly into the React Native `AppState` API.
-
-- **Execution Logic**:
-  1. User starts timer -> app updates `presence_states` to `studying`.
-  2. `AppState` changes to `background` -> app stores timestamp, pauses local counter, updates server state to `idle`.
-  3. On return to `foreground` -> MD3 Modal appears: "You were away. Resume your session?"
-  4. If confirmed, recalculates duration elapsed while active, then resumes counting.
-  5. Once complete, writes a new record directly to `focus_sessions` and triggers success celebration (using `canvas-confetti` or native RN Lottie animation).
-
-### 4.3 LeetCode Auto-Verification Sync
-
-A nightly cron-like routine triggers an Edge Function to sync LeetCode statistics.
-
-- **Verification Flow**:
-  1. User adds LeetCode Username in Profile.
-  2. Edge Function triggers daily at midnight (user's local timezone).
-  3. Fetches profile statistics from LeetCode API (GraphQL query: `matchedUser(username: $username) { submitStats { acSubmissionNum { difficulty count } } }`).
-  4. Compiles count of total solved problems for the current day.
-  5. Compares to previous day's baseline to find today's incremental solved count.
-  6. If incremental solved >= Mission target, updates `mission_completions` -> `is_completed = true` and `verified_at = now()`.
-
-### 4.4 Streaks & The Daily Freeze System
-
-Streaks are evaluated daily per user relative to the midnight rollover of their configured timezone:
-
-- **Streak Evaluation Logic**:
-  1. At rollover, check `mission_completions` for the previous day.
-  2. If all active missions are completed -> increment `current_streak`.
-  3. If any active mission is incomplete -> check if `freeze_tokens > 0`.
-     - If yes: Deduct 1 `freeze_token` from `profiles`, preserve `current_streak`, insert dummy entry in database logging the freeze usage.
-     - If no: Reset `current_streak` to `0`.
-  4. Notify user of status: "Streak protected via Freeze!" or "Streak reset. Let's start fresh today!"
-
 ---
 
-## 5. Security & Push Notifications
+## 5. Verification & Testing
 
-### 5.1 Row Level Security (RLS)
-
-The database leverages postgres row-level security. We ensure queries check ownership `auth.uid() = user_id` or query the partner lookup `user_id = public.get_partner_id(auth.uid())`. This blocks all cross-tenant access.
-
-### 5.2 Push Notification Rules
-
-Notifications are processed via **Expo Push Notifications**:
-
-- Push tokens are uploaded on log in to a `push_tokens` database table.
-- Database triggers track changes in `presence_states` and `focus_sessions`.
-- When `focus_sessions` completes, a trigger fires an Edge Function to send a push payload to the partner's token.
-- Notification payloads contain supportive, positive phrasing: "Your partner just completed 60 minutes of Focus Mode! Send them some encouragement."
-
----
-
-## 6. Verification & Staging Strategy
-
-### 6.1 Automated Tests
-
-- **Unit testing**: Jest for hooks (`useFocusTimer`, `usePresence`) and business validation algorithms (streak counters, freeze calculations).
-- **Integration testing**: Supabase CLI local database testing for testing RLS policies and DB trigger scripts.
-
-### 6.2 Manual Staging Verification
-
-- **Simulators**: Run two concurrent simulator instances (Android Emulator and iOS Simulator) to test realtime presence indicators, bottom sheet interactions, and socket broadcast events.
-- **Device tests**: USB-connected Android phone testing to trace device behavior, foreground/background AppState events, and system notifications.
+* **API Endpoints Testing**: Vercel API endpoints are validated using Jest integration tests mocking database responses, and Postman workspaces.
+* **RLS Policies**: Tested via Supabase local CLI database tests to verify users can never fetch or manipulate another user's records unless linked as active partners.
+* **Background/Foreground Events**: Verified on Android/iOS simulators and USB-connected developer builds to trace AppState handler execution.
