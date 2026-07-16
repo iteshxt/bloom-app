@@ -1,0 +1,16 @@
+{
+  "java.project.resourceFilters": [
+    "node_modules",
+    ".git",
+    "android/app/build",
+    "android/build"
+  ],
+  "java.import.exclusions": [
+    "**/node_modules/**",
+    "**/.metadata/**",
+    "**/android/.settings/**",
+    "**/android/app/build/**",
+    "**/android/build/**"
+  ],
+  "java.configuration.updateBuildConfiguration": "interactive"
+}
