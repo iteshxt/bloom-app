@@ -1,9 +1,24 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Image } from "react-native";
+import React, { useState, useEffect } from "react";
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  ScrollView, 
+  TextInput, 
+  Image, 
+  Alert, 
+  Platform,
+  Dimensions
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme, THEMES, ThemeSlug } from "../contexts/ThemeContext";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
+
+const AVATARS = {
+  Jonathan: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop",
+  Sarah: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop"
+};
 
 interface ProfileScreenProps {
   onBack: () => void;
@@ -20,26 +35,125 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
     updateStreakAndEvaluateThemes 
   } = useTheme();
 
+  // Profile fields state
   const [displayName, setDisplayName] = useState("Jonathan");
-  const [partnerCode, setPartnerCode] = useState("bloom-x93a");
+  const [leetcodeUsername, setLeetcodeUsername] = useState("jonathan_dev");
+  const [avatarUrl, setAvatarUrl] = useState("https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop");
   const [isEditing, setIsEditing] = useState(false);
 
+  // Temporary inputs during edit mode
+  const [tempName, setTempName] = useState(displayName);
+  const [tempLeetcode, setTempLeetcode] = useState(leetcodeUsername);
+  const [tempAvatar, setTempAvatar] = useState(avatarUrl);
+
+  // Sync / Partner state
+  const [isPartnerConnected, setIsPartnerConnected] = useState(true);
+  const [partnerCode, setPartnerCode] = useState("");
+  const [syncId, setSyncId] = useState("");
+
+  // Generate unique 4-character alpha-numeric suffix sync ID on mount
+  useEffect(() => {
+    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    let randCode = "";
+    for (let i = 0; i < 4; i++) {
+      randCode += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setSyncId(`bloom-${randCode}`);
+  }, []);
+
+  const handleSaveProfile = () => {
+    if (tempName.trim() === "") {
+      Alert.alert("Error", "Name cannot be empty.");
+      return;
+    }
+    setDisplayName(tempName);
+    setLeetcodeUsername(tempLeetcode);
+    setAvatarUrl(tempAvatar);
+    setIsEditing(false);
+  };
+
+  const handleDisconnectPartner = () => {
+    Alert.alert(
+      "Disconnect Partner",
+      "Are you sure you want to unlink your account from Sarah? Your shared garden stats will be paused.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Disconnect", 
+          style: "destructive",
+          onPress: () => {
+            setIsPartnerConnected(false);
+          } 
+        }
+      ]
+    );
+  };
+
+  const handleConnectPartner = () => {
+    if (partnerCode.trim().length < 4) {
+      Alert.alert("Error", "Please enter a valid 6-character partner invite code.");
+      return;
+    }
+    setIsPartnerConnected(true);
+    setPartnerCode("");
+    Alert.alert("Connected!", "You are now linked with Sarah's garden!");
+  };
+
+  // Determine active font fallback based on theme
+  const getFontFamily = (weight: "Regular" | "Medium" | "Bold") => {
+    const isRetro = currentTheme === "retro" || currentTheme === "mario";
+    if (isRetro) {
+      return Platform.OS === "ios" ? "Courier-Bold" : "monospace";
+    }
+    switch (weight) {
+      case "Regular": return "Outfit_400Regular";
+      case "Medium": return "Outfit_500Medium";
+      case "Bold": return "Outfit_700Bold";
+    }
+  };
+
+  // Border layout overrides
+  const cardStyle = {
+    backgroundColor: theme.cardBg, 
+    borderColor: theme.border, 
+    borderWidth: theme.borderWidth,
+    borderRadius: theme.borderRadiusCard,
+    padding: 24,
+    marginBottom: 20,
+    shadowColor: theme.text,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: currentTheme === "mario" ? 0 : 0.05,
+    shadowRadius: 10,
+    elevation: currentTheme === "mario" ? 0 : 2
+  };
+
+  const buttonStyle = {
+    borderRadius: theme.borderRadiusButton,
+    borderWidth: theme.borderWidth,
+    borderColor: currentTheme === "mario" ? "#000000" : "transparent"
+  };
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={["top"]}>
       <StatusBar style={theme.statusBar} />
-      <ScrollView contentContainerStyle={{ padding: 24 }}>
+      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 60 }}>
         
         {/* Navigation Header */}
         <View className="flex-row items-center justify-between mb-6">
           <TouchableOpacity 
             onPress={onBack}
-            style={{ backgroundColor: theme.cardBg, borderColor: theme.border, borderWidth: 1 }}
-            className="w-10 h-10 rounded-full justify-center items-center"
+            style={{ 
+              backgroundColor: theme.cardBg, 
+              borderColor: theme.border, 
+              borderWidth: theme.borderWidth,
+              borderRadius: theme.borderRadiusButton 
+            }}
+            className="w-10 h-10 justify-center items-center"
           >
             <Ionicons name="arrow-back" size={20} color={theme.text} />
           </TouchableOpacity>
           <Text 
-            style={{ color: theme.text, fontFamily: "Outfit_700Bold" }} 
+            style={{ color: theme.text, fontFamily: getFontFamily("Bold") }} 
             className="text-xl"
           >
             My Profile
@@ -48,156 +162,273 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
         </View>
 
         {/* Profile Card */}
-        <View 
-          style={{ 
-            backgroundColor: theme.cardBg, 
-            borderColor: theme.border, 
-            borderWidth: 1,
-            shadowColor: theme.text,
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.05,
-            shadowRadius: 10,
-            elevation: 2
-          }} 
-          className="rounded-[32px] p-6 mb-6 items-center"
-        >
+        <View style={cardStyle} className="items-center">
           {/* Avatar Container */}
           <View className="relative mb-4">
             <Image 
-              source={{ uri: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop" }} 
+              source={{ uri: isEditing ? tempAvatar : avatarUrl }} 
               className="w-24 h-24 rounded-full"
+              style={{ borderRadius: currentTheme === "mario" ? 0 : 48 }}
             />
-            <TouchableOpacity 
-              style={{ backgroundColor: theme.primary }} 
-              className="absolute bottom-0 right-0 w-8 h-8 rounded-full justify-center items-center border-4 border-white"
-            >
-              <Ionicons name="camera" size={14} color={theme.primaryContrast} />
-            </TouchableOpacity>
+            {isEditing && (
+              <View 
+                style={{ backgroundColor: theme.primary }} 
+                className="absolute bottom-0 right-0 w-8 h-8 rounded-full justify-center items-center border-4 border-white"
+              >
+                <Ionicons name="camera" size={14} color={theme.primaryContrast} />
+              </View>
+            )}
           </View>
 
-          {/* User Name Info */}
+          {/* Editable Name & Info */}
           {isEditing ? (
-            <View className="flex-row items-center mb-1">
+            <View className="w-full">
+              <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 12, marginBottom: 4 }}>
+                Display Name
+              </Text>
               <TextInput 
-                value={displayName} 
-                onChangeText={setDisplayName}
+                value={tempName} 
+                onChangeText={setTempName}
                 style={{ 
                   color: theme.text, 
-                  fontFamily: "Outfit_600SemiBold", 
-                  borderBottomColor: theme.primary, 
-                  borderBottomWidth: 2,
-                  fontSize: 20,
-                  textAlign: "center",
-                  minWidth: 120
+                  fontFamily: getFontFamily("Medium"), 
+                  borderColor: theme.border, 
+                  borderWidth: theme.borderWidth,
+                  borderRadius: theme.borderRadiusButton,
+                  backgroundColor: theme.background,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  fontSize: 16,
+                  marginBottom: 12
                 }}
               />
-              <TouchableOpacity onPress={() => setIsEditing(false)} className="ml-2">
-                <Ionicons name="checkmark-circle" size={24} color={theme.accent} />
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View className="flex-row items-center mb-1">
-              <Text 
-                style={{ color: theme.text, fontFamily: "Outfit_700Bold" }} 
-                className="text-2xl"
-              >
-                {displayName}
+
+              <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 12, marginBottom: 4 }}>
+                LeetCode Profile Handle
               </Text>
-              <TouchableOpacity onPress={() => setIsEditing(true)} className="ml-2">
-                <Ionicons name="create-outline" size={18} color={theme.textSecondary} />
-              </TouchableOpacity>
-            </View>
-          )}
+              <TextInput 
+                value={tempLeetcode} 
+                onChangeText={setTempLeetcode}
+                style={{ 
+                  color: theme.text, 
+                  fontFamily: getFontFamily("Medium"), 
+                  borderColor: theme.border, 
+                  borderWidth: theme.borderWidth,
+                  borderRadius: theme.borderRadiusButton,
+                  backgroundColor: theme.background,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  fontSize: 14,
+                  marginBottom: 12
+                }}
+              />
 
-          <Text 
-            style={{ color: theme.textSecondary, fontFamily: "Outfit_400Regular" }} 
-            className="text-sm mb-4"
-          >
-            LeetCode: @jonathan_dev
-          </Text>
+              <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 12, marginBottom: 4 }}>
+                Avatar Image URL
+              </Text>
+              <TextInput 
+                value={tempAvatar} 
+                onChangeText={setTempAvatar}
+                style={{ 
+                  color: theme.text, 
+                  fontFamily: getFontFamily("Medium"), 
+                  borderColor: theme.border, 
+                  borderWidth: theme.borderWidth,
+                  borderRadius: theme.borderRadiusButton,
+                  backgroundColor: theme.background,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  fontSize: 12,
+                  marginBottom: 16
+                }}
+              />
 
-          {/* Streak Freeze Token Status */}
-          <View 
-            style={{ backgroundColor: theme.backgroundSecondary }} 
-            className="rounded-2xl px-4 py-3 flex-row items-center w-full justify-between"
-          >
-            <View className="flex-row items-center">
-              <Ionicons name="snow" size={20} color="#0284C7" style={{ marginRight: 8 }} />
-              <View>
-                <Text style={{ color: theme.text, fontFamily: "Outfit_600SemiBold" }} className="text-sm">
-                  Streak Freeze
-                </Text>
-                <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_400Regular" }} className="text-xs">
-                  Auto-preserves daily misses
-                </Text>
+              <View className="flex-row justify-between">
+                <TouchableOpacity 
+                  onPress={() => setIsEditing(false)}
+                  style={{ backgroundColor: theme.backgroundSecondary, ...buttonStyle }}
+                  className="flex-1 py-2.5 rounded-full items-center mr-2"
+                >
+                  <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 13 }}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  onPress={handleSaveProfile}
+                  style={{ backgroundColor: theme.primary, ...buttonStyle }}
+                  className="flex-1 py-2.5 rounded-full items-center ml-2"
+                >
+                  <Text style={{ color: theme.primaryContrast, fontFamily: getFontFamily("Bold"), fontSize: 13 }}>
+                    Save
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
-            <View style={{ backgroundColor: "#E0F2FE" }} className="rounded-full px-3 py-1">
-              <Text style={{ color: "#0284C7", fontFamily: "Outfit_700Bold" }} className="text-sm">
-                3 Left
+          ) : (
+            <View className="items-center w-full">
+              <View className="flex-row items-center justify-center mb-1">
+                <Text 
+                  style={{ color: theme.text, fontFamily: getFontFamily("Bold") }} 
+                  className="text-2xl"
+                >
+                  {displayName}
+                </Text>
+                <TouchableOpacity 
+                  onPress={() => {
+                    setTempName(displayName);
+                    setTempLeetcode(leetcodeUsername);
+                    setTempAvatar(avatarUrl);
+                    setIsEditing(true);
+                  }} 
+                  className="ml-2"
+                >
+                  <Ionicons name="create-outline" size={18} color={theme.textSecondary} />
+                </TouchableOpacity>
+              </View>
+
+              <Text 
+                style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular") }} 
+                className="text-sm mb-4"
+              >
+                LeetCode: @{leetcodeUsername}
               </Text>
+
+              {/* Streak Freeze Token Status */}
+              <View 
+                style={{ backgroundColor: theme.backgroundSecondary }} 
+                className="rounded-2xl px-4 py-3 flex-row items-center w-full justify-between"
+              >
+                <View className="flex-row items-center">
+                  <Ionicons name="snow" size={20} color="#0284C7" style={{ marginRight: 8 }} />
+                  <View>
+                    <Text style={{ color: theme.text, fontFamily: getFontFamily("Medium") }} className="text-sm">
+                      Streak Freeze
+                    </Text>
+                    <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular") }} className="text-xs">
+                      Auto-preserves daily misses
+                    </Text>
+                  </View>
+                </View>
+                <View style={{ backgroundColor: "#E0F2FE" }} className="rounded-full px-3 py-1">
+                  <Text style={{ color: "#0284C7", fontFamily: getFontFamily("Bold") }} className="text-sm">
+                    3 Left
+                  </Text>
+                </View>
+              </View>
             </View>
-          </View>
+          )}
         </View>
 
-        {/* Partner Connection Card */}
-        <View 
-          style={{ backgroundColor: theme.cardBg, borderColor: theme.border, borderWidth: 1 }} 
-          className="rounded-[32px] p-6 mb-6"
-        >
+        {/* Account Sync Card */}
+        <View style={cardStyle}>
           <Text 
-            style={{ color: theme.text, fontFamily: "Outfit_700Bold" }} 
+            style={{ color: theme.text, fontFamily: getFontFamily("Bold") }} 
             className="text-lg mb-3"
           >
             Account Sync
           </Text>
 
-          <View className="flex-row items-center mb-4">
-            <Image 
-              source={{ uri: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop" }} 
-              className="w-12 h-12 rounded-full mr-3"
-            />
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: theme.text, fontFamily: "Outfit_600SemiBold" }} className="text-base">
-                Sarah
-              </Text>
-              <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_400Regular" }} className="text-xs">
-                Partner Active Since July 2026
-              </Text>
-            </View>
-            <View style={{ backgroundColor: "#DCFCE7" }} className="rounded-full px-3 py-1">
-              <Text style={{ color: "#15803D", fontFamily: "Outfit_700Bold" }} className="text-xs">
-                ● Active
-              </Text>
-            </View>
-          </View>
+          {isPartnerConnected ? (
+            <View>
+              <View className="flex-row items-center mb-4">
+                <Image 
+                  source={{ uri: AVATARS.Sarah }} 
+                  className="w-12 h-12 rounded-full mr-3"
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: theme.text, fontFamily: getFontFamily("Medium") }} className="text-base">
+                    Sarah
+                  </Text>
+                  <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular") }} className="text-xs">
+                    Partner Active Since July 2026
+                  </Text>
+                </View>
+                <View style={{ backgroundColor: "#DCFCE7" }} className="rounded-full px-3 py-1">
+                  <Text style={{ color: "#15803D", fontFamily: getFontFamily("Bold") }} className="text-xs">
+                    ● Active
+                  </Text>
+                </View>
+              </View>
 
-          <View className="flex-row items-center justify-between border-t pt-4" style={{ borderTopColor: theme.border }}>
-            <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_400Regular" }} className="text-xs">
-              Sync ID: {partnerCode}
-            </Text>
-            <TouchableOpacity className="flex-row items-center">
-              <Ionicons name="copy-outline" size={14} color={theme.textSecondary} className="mr-1" />
-              <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_500Medium" }} className="text-xs">
-                Copy
+              <View className="flex-row items-center justify-between border-t pt-4" style={{ borderTopColor: theme.border }}>
+                <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular") }} className="text-xs">
+                  Sync ID: bloom-x93a
+                </Text>
+                <TouchableOpacity 
+                  onPress={handleDisconnectPartner}
+                  style={{ backgroundColor: `${theme.warning}15`, paddingHorizontal: 12, paddingVertical: 6, ...buttonStyle }}
+                  className="rounded-full"
+                >
+                  <Text style={{ color: theme.warning, fontFamily: getFontFamily("Bold"), fontSize: 10 }}>
+                    Disconnect
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <View>
+              <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular"), fontSize: 13, marginBottom: 12, lineHeight: 18 }}>
+                You are currently not connected to any partner. Sync to study, verify LeetCode tasks, and grow streaks together!
               </Text>
-            </TouchableOpacity>
-          </View>
+              
+              <View className="bg-gray-100 rounded-xl p-3 mb-4 flex-row justify-between items-center" style={{ backgroundColor: theme.background }}>
+                <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 13 }}>
+                  Your Code: {syncId}
+                </Text>
+                <TouchableOpacity className="flex-row items-center">
+                  <Feather name="copy" size={14} color={theme.textSecondary} />
+                  <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Bold"), fontSize: 11, marginLeft: 4 }}>Copy</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Input for connecting */}
+              <View className="flex-row">
+                <TextInput
+                  value={partnerCode}
+                  onChangeText={setPartnerCode}
+                  placeholder="Enter partner invite code"
+                  placeholderTextColor="#9CA3AF"
+                  style={{ 
+                    flex: 1.5,
+                    backgroundColor: theme.background, 
+                    color: theme.text, 
+                    fontFamily: getFontFamily("Medium"),
+                    borderColor: theme.border, 
+                    borderWidth: theme.borderWidth,
+                    borderRadius: theme.borderRadiusButton,
+                    paddingHorizontal: 12,
+                    marginRight: 8,
+                    fontSize: 12
+                  }}
+                />
+                <TouchableOpacity
+                  onPress={handleConnectPartner}
+                  style={{ backgroundColor: theme.primary, flex: 1, ...buttonStyle }}
+                  className="py-3 rounded-full items-center justify-center"
+                >
+                  <Text style={{ color: theme.primaryContrast, fontFamily: getFontFamily("Bold"), fontSize: 11 }}>
+                    Connect
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Theme Customization Section */}
         <View className="mb-6">
           <Text 
-            style={{ color: theme.text, fontFamily: "Outfit_700Bold" }} 
+            style={{ color: theme.text, fontFamily: getFontFamily("Bold") }} 
             className="text-lg mb-1 px-2"
           >
             Theme Unlocks
           </Text>
           <Text 
-            style={{ color: theme.textSecondary, fontFamily: "Outfit_400Regular" }} 
-            className="text-xs mb-3 px-2"
+            style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular") }} 
+            className="text-xs mb-4 px-2"
           >
-            Unlocked automatically via streak milestones. Active: {themeInfo.name}
+            Unlocked automatically via weekly milestones (5-day intervals).
           </Text>
 
           <ScrollView 
@@ -218,17 +449,16 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
                   style={{
                     backgroundColor: isActive ? theme.primary : isUnlocked ? theme.cardBg : theme.backgroundSecondary,
                     borderColor: isActive ? theme.primaryDark : theme.border,
-                    borderWidth: 1,
+                    borderWidth: theme.borderWidth,
+                    borderRadius: theme.borderRadiusButton,
                     opacity: isUnlocked ? 1 : 0.6,
                     paddingVertical: 8,
                     paddingHorizontal: 16,
-                    borderRadius: 20,
                     marginRight: 8,
                     flexDirection: "row",
                     alignItems: "center"
                   }}
                 >
-                  {/* Small visual color preview dot */}
                   <View 
                     style={{ 
                       width: 10, 
@@ -244,11 +474,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
                   <Text 
                     style={{ 
                       color: isActive ? theme.primaryContrast : theme.text,
-                      fontFamily: "Outfit_600SemiBold",
+                      fontFamily: getFontFamily("Medium"),
                       fontSize: 13
                     }}
                   >
-                    {item.name}
+                    {item.name} ({item.milestone})
                   </Text>
                   
                   {!isUnlocked ? (
@@ -273,53 +503,75 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
         </View>
 
         {/* Simulation Sandbox Card */}
-        <View 
-          style={{ backgroundColor: theme.cardBg, borderColor: theme.border, borderWidth: 1 }} 
-          className="rounded-[32px] p-6 mb-6"
-        >
+        <View style={cardStyle}>
           <Text 
-            style={{ color: theme.text, fontFamily: "Outfit_700Bold" }} 
+            style={{ color: theme.text, fontFamily: getFontFamily("Bold") }} 
             className="text-base mb-1"
           >
             Streak Sandbox Simulator
           </Text>
           <Text 
-            style={{ color: theme.textSecondary, fontFamily: "Outfit_400Regular" }} 
+            style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular") }} 
             className="text-xs mb-4"
           >
-            Modify streak values to unlock themes and preview the lock/unlock UI logic.
+            Modify streak values in 5-day increments to unlock themes.
           </Text>
 
           <View className="flex-row items-center justify-between mb-4">
-            <Text style={{ color: theme.text, fontFamily: "Outfit_600SemiBold" }} className="text-sm">
+            <Text style={{ color: theme.text, fontFamily: getFontFamily("Medium") }} className="text-sm">
               Simulated Streak:
             </Text>
-            <Text style={{ color: theme.primaryDark, fontFamily: "Outfit_700Bold" }} className="text-lg">
+            <Text style={{ color: theme.primaryDark, fontFamily: getFontFamily("Bold") }} className="text-lg">
               {currentStreak} Days
             </Text>
           </View>
 
           <View className="flex-row justify-between">
             <TouchableOpacity 
-              onPress={() => updateStreakAndEvaluateThemes(Math.max(0, currentStreak - 15))}
-              style={{ backgroundColor: theme.backgroundSecondary }}
+              onPress={() => updateStreakAndEvaluateThemes(Math.max(0, currentStreak - 5))}
+              style={{ backgroundColor: theme.backgroundSecondary, ...buttonStyle }}
               className="rounded-full py-2.5 px-6"
             >
-              <Text style={{ color: theme.text, fontFamily: "Outfit_600SemiBold" }} className="text-xs">
-                -15 Days
+              <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold") }} className="text-xs">
+                -5 Days
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
-              onPress={() => updateStreakAndEvaluateThemes(currentStreak + 15)}
-              style={{ backgroundColor: theme.primary }}
+              onPress={() => updateStreakAndEvaluateThemes(currentStreak + 5)}
+              style={{ backgroundColor: theme.primary, ...buttonStyle }}
               className="rounded-full py-2.5 px-6"
             >
-              <Text className="text-xs font-bold" style={{ color: theme.primaryContrast, fontFamily: "Outfit_700Bold" }}>
-                +15 Days
+              <Text style={{ color: theme.primaryContrast, fontFamily: getFontFamily("Bold") }} className="text-xs">
+                +5 Days
               </Text>
             </TouchableOpacity>
           </View>
+        </View>
+
+        {/* Google Sync and Sign-Out Button */}
+        <View style={cardStyle} className="flex-row justify-between items-center">
+          <View className="flex-row items-center">
+            <Ionicons name="logo-google" size={18} color="#EA4335" style={{ marginRight: 8 }} />
+            <Text style={{ color: theme.text, fontFamily: getFontFamily("Medium"), fontSize: 13 }}>
+              Google Connected
+            </Text>
+          </View>
+          
+          <TouchableOpacity 
+            onPress={() => Alert.alert("Signed Out", "You have successfully signed out.")}
+            style={{ 
+              backgroundColor: `${theme.warning}15`, 
+              borderRadius: theme.borderRadiusButton,
+              borderWidth: currentTheme === "mario" ? theme.borderWidth : 1, 
+              borderColor: currentTheme === "mario" ? "#000000" : theme.warning
+            }}
+            className="px-5 py-2 rounded-full"
+          >
+            <Text style={{ color: theme.warning, fontFamily: getFontFamily("Bold"), fontSize: 11 }}>
+              Sign Out
+            </Text>
+          </TouchableOpacity>
         </View>
 
       </ScrollView>
