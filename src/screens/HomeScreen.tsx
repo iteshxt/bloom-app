@@ -10,7 +10,8 @@ import {
   Modal, 
   Switch,
   Platform,
-  Dimensions
+  Dimensions,
+  NativeModules
 } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
 import { useTasks, Task } from "../contexts/TasksContext";
@@ -66,6 +67,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile }) =
   // Partner Active Status
   const [partnerStatus, setPartnerStatus] = useState<"Studying" | "On Break" | "Idle" | "Offline">("Studying");
   const [notificationToast, setNotificationToast] = useState<string | null>(null);
+
+  // Sync partner status to native widget when it changes
+  useEffect(() => {
+    if (NativeModules.WidgetBridge) {
+      const partnerData = {
+        name: "Sarah",
+        status: partnerStatus,
+        task: "Graph Algorithms",
+        timeLeft: partnerStatus === "Studying" ? "24m" : (partnerStatus === "On Break" ? "5m" : "")
+      };
+      try {
+        NativeModules.WidgetBridge.updatePartner(JSON.stringify(partnerData));
+      } catch (e) {
+        console.error("Widget partner sync failed", e);
+      }
+    }
+  }, [partnerStatus]);
 
   // Floating Hearts Animation State
   const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([]);

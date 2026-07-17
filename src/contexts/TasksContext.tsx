@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { NativeModules } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export interface Task {
@@ -47,12 +48,29 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [tasks, setTasks] = useState<Task[]>([]);
   const [customTagsColors, setCustomTagsColors] = useState<Record<string, string>>({});
 
+  const syncWithWidgets = (updatedTasks: Task[]) => {
+    if (NativeModules.WidgetBridge) {
+      try {
+        const widgetPayload = updatedTasks.map(t => ({
+          name: t.name,
+          category: t.category,
+          completed: t.completed
+        }));
+        NativeModules.WidgetBridge.updateTasks(JSON.stringify(widgetPayload));
+      } catch (e) {
+        console.error("Widget tasks sync failed", e);
+      }
+    }
+  };
+
   useEffect(() => {
     const loadTasks = async () => {
       try {
         const stored = await AsyncStorage.getItem(ASYNC_STORAGE_TASKS_KEY);
         if (stored) {
-          setTasks(JSON.parse(stored));
+          const parsed = JSON.parse(stored);
+          setTasks(parsed);
+          syncWithWidgets(parsed);
         } else {
           const defaultTasks: Task[] = [
             {
@@ -84,6 +102,7 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             }
           ];
           setTasks(defaultTasks);
+          syncWithWidgets(defaultTasks);
           await AsyncStorage.setItem(ASYNC_STORAGE_TASKS_KEY, JSON.stringify(defaultTasks));
         }
       } catch (e) {
@@ -97,6 +116,7 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       setTasks(newTasks);
       await AsyncStorage.setItem(ASYNC_STORAGE_TASKS_KEY, JSON.stringify(newTasks));
+      syncWithWidgets(newTasks);
     } catch (e) {
       console.error("Failed to save tasks", e);
     }
