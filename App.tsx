@@ -3,11 +3,16 @@ import React, { useState } from "react";
 import { View, Text, ActivityIndicator, LogBox } from "react-native";
 import { useFonts, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold, Outfit_700Bold } from "@expo-google-fonts/outfit";
 import { ThemeProvider, useTheme } from "./src/contexts/ThemeContext";
+import { TasksProvider } from "./src/contexts/TasksContext";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import { configureReanimatedLogger, ReanimatedLogLevel } from "react-native-reanimated";
 
-// Ignore NativeWind / Reanimated rendering warning
-LogBox.ignoreLogs(["[Reanimated] Writing to `value` during component render."]);
+// Disable Reanimated strict mode warnings for NativeWind shared value writes during render
+configureReanimatedLogger({
+  level: ReanimatedLogLevel.warn,
+  strict: false,
+});
 
 // Import Screens & Components
 import { HomeScreen } from "./src/screens/HomeScreen";
@@ -17,10 +22,62 @@ import { InsightsScreen } from "./src/screens/InsightsScreen";
 import { ProfileScreen } from "./src/screens/ProfileScreen";
 import { BottomDock, TabSlug } from "./src/components/BottomDock";
 
+// Dynamic text component override to alias font families app-wide
+const isIconFont = (fontName: string) => {
+  if (!fontName) return false;
+  const lower = fontName.toLowerCase();
+  return lower.includes("icon") || 
+         lower.includes("feather") || 
+         lower.includes("awesome") || 
+         lower.includes("vector") || 
+         lower.includes("material") || 
+         lower.includes("evil") || 
+         lower.includes("entypo") || 
+         lower.includes("antdesign") || 
+         lower.includes("simpleline") || 
+         lower.includes("octicons") || 
+         lower.includes("foundation") ||
+         lower.includes("ionicons");
+};
+
+const originalTextRender = (Text as any).render;
+(Text as any).render = function(props: any, ref: any) {
+  const result = originalTextRender.call(this, props, ref);
+  
+  if (result?.props?.style) {
+    let currentFont = "";
+    
+    if (Array.isArray(result.props.style)) {
+      const found = result.props.style.find((s: any) => s?.fontFamily);
+      if (found) currentFont = found.fontFamily;
+    } else if (result.props.style.fontFamily) {
+      currentFont = result.props.style.fontFamily;
+    }
+
+    if (currentFont && isIconFont(currentFont)) {
+      return result;
+    }
+
+    let targetFont = (globalThis as any).activeFontFamilyRegular;
+    if (currentFont === "Outfit_500Medium" || currentFont === "Outfit_600SemiBold") {
+      targetFont = (globalThis as any).activeFontFamilyMedium;
+    } else if (currentFont === "Outfit_700Bold") {
+      targetFont = (globalThis as any).activeFontFamilyBold;
+    }
+
+    if (targetFont) {
+      const customStyle = [result.props.style, { fontFamily: targetFont }];
+      return React.cloneElement(result, { style: customStyle });
+    }
+  }
+  return result;
+};
+
 function AppContent() {
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState<TabSlug>("home");
   const [showProfile, setShowProfile] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   // Render screens conditionally based on navigation state
   if (showProfile) {
@@ -32,7 +89,7 @@ function AppContent() {
       case "home":
         return <HomeScreen onNavigateToProfile={() => setShowProfile(true)} />;
       case "focus":
-        return <FocusScreen />;
+        return <FocusScreen onFullScreenToggle={setIsFullScreen} />;
       case "calendar":
         return <CalendarScreen />;
       case "insights":
@@ -49,10 +106,12 @@ function AppContent() {
       {renderScreen()}
 
       {/* Persistent Floating Bottom Dock Navigation */}
-      <BottomDock 
-        activeTab={activeTab} 
-        onTabSelect={(tab) => setActiveTab(tab)} 
-      />
+      {!isFullScreen && (
+        <BottomDock 
+          activeTab={activeTab} 
+          onTabSelect={(tab) => setActiveTab(tab)} 
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -79,7 +138,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <AppContent />
+        <TasksProvider>
+          <AppContent />
+        </TasksProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

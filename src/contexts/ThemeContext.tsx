@@ -1,21 +1,28 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 
 export type ThemeSlug = "lavender" | "sakura" | "minimal" | "honey" | "nordic" | "retro" | "mario";
 
 export interface ColorPalette {
   primary: string;
   primaryDark: string;
-  primaryContrast: string; // Text color to show on top of primary color backgrounds
+  primaryContrast: string; 
   background: string;
   backgroundSecondary: string;
   text: string;
   textSecondary: string;
-  accent: string;       // Typically Green (Completed)
-  warning: string;      // Typically Coral/Red (Warnings/Deletes)
-  border: string;       // Thin dividers
+  accent: string;       
+  warning: string;      
+  border: string;       
   statusBar: "light" | "dark";
   cardBg: string;
+  borderRadiusCard: number;
+  borderRadiusButton: number;
+  borderWidth: number;
+  fontFamilyRegular: string;
+  fontFamilyMedium: string;
+  fontFamilyBold: string;
 }
 
 export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors: ColorPalette }> = {
@@ -23,27 +30,33 @@ export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors
     name: "Default Lavender",
     milestone: "0 Days",
     colors: {
-      primary: "#A78BFA", // Vibrant pastel purple
-      primaryDark: "#7C3AED", // Deeper purple accent
+      primary: "#A78BFA", 
+      primaryDark: "#7C3AED", 
       primaryContrast: "#FFFFFF",
-      background: "#F8F6FC", // Soft lavender cream background
-      backgroundSecondary: "#F1ECF9", // Slightly deeper lavender tint for containers
-      text: "#3F2D6B", // Rich dark purple text
-      textSecondary: "#8E7CAE", // Secondary pastel purple-grey text
-      accent: "#4B7E4F", // Sage Green
-      warning: "#F29F8F", // Peach Coral
-      border: "#E5DCF5", // Soft lavender-tinted borders
+      background: "#F8F6FC", 
+      backgroundSecondary: "#F1ECF9", 
+      text: "#3F2D6B", 
+      textSecondary: "#8E7CAE", 
+      accent: "#4B7E4F", 
+      warning: "#F29F8F", 
+      border: "#E5DCF5", 
       statusBar: "dark",
       cardBg: "#FFFFFF",
+      borderRadiusCard: 32,
+      borderRadiusButton: 999,
+      borderWidth: 1,
+      fontFamilyRegular: "Outfit_400Regular",
+      fontFamilyMedium: "Outfit_500Medium",
+      fontFamilyBold: "Outfit_700Bold",
     },
   },
   sakura: {
     name: "Sakura",
-    milestone: "7 Days",
+    milestone: "5 Days",
     colors: {
       primary: "#E8A7A1",
       primaryDark: "#D48C84",
-      primaryContrast: "#4F2626", // Cozy dark red-brown for optimal text contrast on pink
+      primaryContrast: "#4F2626", 
       background: "#FFF8F8",
       backgroundSecondary: "#FFEBEB",
       text: "#4F2626",
@@ -53,33 +66,45 @@ export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors
       border: "#FAD0D0",
       statusBar: "dark",
       cardBg: "#FFFFFF",
+      borderRadiusCard: 40,
+      borderRadiusButton: 999,
+      borderWidth: 1.2,
+      fontFamilyRegular: Platform.OS === "ios" ? "Georgia" : "serif",
+      fontFamilyMedium: Platform.OS === "ios" ? "Georgia" : "serif",
+      fontFamilyBold: Platform.OS === "ios" ? "Georgia-Bold" : "serif",
     },
   },
   minimal: {
     name: "Minimal",
-    milestone: "14 Days",
+    milestone: "10 Days",
     colors: {
       primary: "#E5E5E5",
       primaryDark: "#888888",
-      primaryContrast: "#121212", // Dark charcoal text on light gray active button/card
+      primaryContrast: "#121212", 
       background: "#121212",
-      backgroundSecondary: "#252525", // Lighter gray so containers stand out from cardBg
+      backgroundSecondary: "#252525", 
       text: "#F5F5F5",
       textSecondary: "#A0A0A0",
       accent: "#888888",
       warning: "#FF5E5E",
-      border: "#333333", // Slightly lighter border for visibility
+      border: "#333333", 
       statusBar: "light",
       cardBg: "#1E1E1E",
+      borderRadiusCard: 12,
+      borderRadiusButton: 8,
+      borderWidth: 1.5,
+      fontFamilyRegular: Platform.OS === "ios" ? "Helvetica-Light" : "sans-serif-light",
+      fontFamilyMedium: Platform.OS === "ios" ? "Helvetica" : "sans-serif-light",
+      fontFamilyBold: Platform.OS === "ios" ? "Helvetica-Bold" : "sans-serif-medium",
     },
   },
   honey: {
     name: "Honey Amber",
-    milestone: "30 Days",
+    milestone: "15 Days",
     colors: {
       primary: "#D99B26",
       primaryDark: "#A36F10",
-      primaryContrast: "#4A3305", // Dark brown for readability on amber
+      primaryContrast: "#4A3305", 
       background: "#FFFDF6",
       backgroundSecondary: "#FFF6DC",
       text: "#4A3305",
@@ -89,11 +114,17 @@ export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors
       border: "#F3E5AB",
       statusBar: "dark",
       cardBg: "#FFFFFF",
+      borderRadiusCard: 28,
+      borderRadiusButton: 16,
+      borderWidth: 1,
+      fontFamilyRegular: Platform.OS === "ios" ? "Avenir-Medium" : "sans-serif-medium",
+      fontFamilyMedium: Platform.OS === "ios" ? "Avenir-Heavy" : "sans-serif-medium",
+      fontFamilyBold: Platform.OS === "ios" ? "Avenir-Black" : "sans-serif-medium",
     },
   },
   nordic: {
     name: "Nordic Winter",
-    milestone: "60 Days",
+    milestone: "20 Days",
     colors: {
       primary: "#7CA3B8",
       primaryDark: "#4B748C",
@@ -107,11 +138,17 @@ export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors
       border: "#D2E3EB",
       statusBar: "dark",
       cardBg: "#FFFFFF",
+      borderRadiusCard: 20,
+      borderRadiusButton: 12,
+      borderWidth: 1,
+      fontFamilyRegular: Platform.OS === "ios" ? "Arial" : "sans-serif-condensed",
+      fontFamilyMedium: Platform.OS === "ios" ? "Arial-BoldMT" : "sans-serif-condensed",
+      fontFamilyBold: Platform.OS === "ios" ? "Arial-BoldMT" : "sans-serif-condensed",
     },
   },
   retro: {
     name: "Retro Arcade",
-    milestone: "100 Days",
+    milestone: "25 Days",
     colors: {
       primary: "#9B30FF",
       primaryDark: "#68228B",
@@ -125,11 +162,17 @@ export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors
       border: "#FF00FF",
       statusBar: "light",
       cardBg: "#1F0033",
+      borderRadiusCard: 8,
+      borderRadiusButton: 8,
+      borderWidth: 2,
+      fontFamilyRegular: Platform.OS === "ios" ? "Courier" : "monospace",
+      fontFamilyMedium: Platform.OS === "ios" ? "Courier" : "monospace",
+      fontFamilyBold: Platform.OS === "ios" ? "Courier-Bold" : "monospace",
     },
   },
   mario: {
     name: "Super Mario",
-    milestone: "180 Days",
+    milestone: "30 Days",
     colors: {
       primary: "#E52521",
       primaryDark: "#B31010",
@@ -143,6 +186,12 @@ export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors
       border: "#000000",
       statusBar: "dark",
       cardBg: "#FFFFFF",
+      borderRadiusCard: 0,
+      borderRadiusButton: 0,
+      borderWidth: 4,
+      fontFamilyRegular: Platform.OS === "ios" ? "Courier" : "monospace",
+      fontFamilyMedium: Platform.OS === "ios" ? "Courier" : "monospace",
+      fontFamilyBold: Platform.OS === "ios" ? "Courier-Bold" : "monospace",
     },
   },
 };
@@ -167,7 +216,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [currentStreak, setCurrentStreak] = useState<number>(0);
   const [unlockedThemes, setUnlockedThemes] = useState<ThemeSlug[]>(["lavender"]);
 
-  // Load initial settings from AsyncStorage
   useEffect(() => {
     const loadSettings = async () => {
       try {
@@ -177,14 +225,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const streak = storedStreak ? parseInt(storedStreak, 10) : 0;
         setCurrentStreak(streak);
         
-        // Evaluate unlocked themes based on streak
         const unlocked: ThemeSlug[] = ["lavender"];
-        if (streak >= 7) unlocked.push("sakura");
-        if (streak >= 14) unlocked.push("minimal");
-        if (streak >= 30) unlocked.push("honey");
-        if (streak >= 60) unlocked.push("nordic");
-        if (streak >= 100) unlocked.push("retro");
-        if (streak >= 180) unlocked.push("mario");
+        if (streak >= 5) unlocked.push("sakura");
+        if (streak >= 10) unlocked.push("minimal");
+        if (streak >= 15) unlocked.push("honey");
+        if (streak >= 20) unlocked.push("nordic");
+        if (streak >= 25) unlocked.push("retro");
+        if (streak >= 30) unlocked.push("mario");
         
         setUnlockedThemes(unlocked);
 
@@ -219,16 +266,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setCurrentStreak(newStreak);
 
       const unlocked: ThemeSlug[] = ["lavender"];
-      if (newStreak >= 7) unlocked.push("sakura");
-      if (newStreak >= 14) unlocked.push("minimal");
-      if (newStreak >= 30) unlocked.push("honey");
-      if (newStreak >= 60) unlocked.push("nordic");
-      if (newStreak >= 100) unlocked.push("retro");
-      if (newStreak >= 180) unlocked.push("mario");
+      if (newStreak >= 5) unlocked.push("sakura");
+      if (newStreak >= 10) unlocked.push("minimal");
+      if (newStreak >= 15) unlocked.push("honey");
+      if (newStreak >= 20) unlocked.push("nordic");
+      if (newStreak >= 25) unlocked.push("retro");
+      if (newStreak >= 30) unlocked.push("mario");
 
       setUnlockedThemes(unlocked);
 
-      // If the currently selected theme became locked again (e.g. streak reset), reset to lavender
       if (!unlocked.includes(currentTheme)) {
         await setTheme("lavender");
       }
@@ -238,6 +284,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const activeTheme = THEMES[currentTheme];
+
+  if (typeof globalThis !== "undefined") {
+    (globalThis as any).activeFontFamilyRegular = activeTheme.colors.fontFamilyRegular;
+    (globalThis as any).activeFontFamilyMedium = activeTheme.colors.fontFamilyMedium;
+    (globalThis as any).activeFontFamilyBold = activeTheme.colors.fontFamilyBold;
+  }
 
   return (
     <ThemeContext.Provider
