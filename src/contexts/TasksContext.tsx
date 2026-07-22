@@ -9,12 +9,13 @@ export interface Task {
   color: string;
   completed: boolean;
   isRecurring: boolean;
+  recurrenceDays: ("monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday")[];
   contributions: number[]; // 91 values representing completion history
 }
 
 interface TasksContextProps {
   tasks: Task[];
-  addTask: (name: string, category: string, isRecurring: boolean) => void;
+  addTask: (name: string, category: string, recurrenceDays: string[]) => void;
   toggleTask: (id: string) => void;
   deleteTask: (id: string) => void;
 }
@@ -69,8 +70,25 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const stored = await AsyncStorage.getItem(ASYNC_STORAGE_TASKS_KEY);
         if (stored) {
           const parsed = JSON.parse(stored);
-          setTasks(parsed);
-          syncWithWidgets(parsed);
+          const migrated = parsed.map((t: any) => {
+            let days = t.recurrenceDays;
+            if (!days) {
+              if (t.recurrence === "daily" || t.isRecurring) {
+                days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+              } else if (t.recurrence && t.recurrence !== "none") {
+                days = [t.recurrence];
+              } else {
+                days = [];
+              }
+            }
+            return {
+              ...t,
+              recurrenceDays: days,
+              isRecurring: days.length > 0
+            };
+          });
+          setTasks(migrated);
+          syncWithWidgets(migrated);
         } else {
           const defaultTasks: Task[] = [
             {
@@ -80,6 +98,7 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               color: CATEGORY_COLORS.leetcode,
               completed: true,
               isRecurring: true,
+              recurrenceDays: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
               contributions: generateMockContributions(0.75)
             },
             {
@@ -89,6 +108,7 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               color: CATEGORY_COLORS.fitness,
               completed: false,
               isRecurring: true,
+              recurrenceDays: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
               contributions: generateMockContributions(0.55)
             },
             {
@@ -98,6 +118,7 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               color: CATEGORY_COLORS.growth,
               completed: false,
               isRecurring: true,
+              recurrenceDays: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
               contributions: generateMockContributions(0.88)
             }
           ];
@@ -133,10 +154,15 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return selectedColor;
   };
 
-  const addTask = (name: string, category: string, isRecurring: boolean) => {
+  const addTask = (
+    name: string, 
+    category: string, 
+    recurrenceDays: string[]
+  ) => {
     const cleanTag = category.trim() === "" ? "Custom" : category.trim();
     const taskColor = getTagColor(cleanTag);
     
+    const isRecurring = recurrenceDays.length > 0;
     const initialContributions = isRecurring ? generateMockContributions(0.2) : [];
     if (isRecurring && initialContributions.length > 0) {
       initialContributions[90] = 0; 
@@ -149,6 +175,7 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       color: taskColor,
       completed: false,
       isRecurring,
+      recurrenceDays: recurrenceDays as any,
       contributions: initialContributions
     };
 
