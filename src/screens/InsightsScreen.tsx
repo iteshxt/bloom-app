@@ -103,6 +103,33 @@ export const InsightsScreen: React.FC = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
+      {/* Background Watermark Leaves */}
+      <View style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0, overflow: "hidden" }} pointerEvents="none">
+        <Ionicons 
+          name="leaf" 
+          size={350} 
+          color={theme.primary} 
+          style={{ 
+            position: "absolute", 
+            left: -100, 
+            top: -50, 
+            opacity: 0.06, 
+            transform: [{ rotate: "-35deg" }] 
+          }} 
+        />
+        <Ionicons 
+          name="leaf" 
+          size={450} 
+          color={theme.primary} 
+          style={{ 
+            position: "absolute", 
+            right: -150, 
+            bottom: 50, 
+            opacity: 0.06, 
+            transform: [{ rotate: "45deg" }] 
+          }} 
+        />
+      </View>
       
       {/* Title & Page Header */}
       <View style={{ paddingHorizontal: 24, paddingTop: 16 }}>

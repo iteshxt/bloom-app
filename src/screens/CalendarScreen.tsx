@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   View, 
   Text, 
@@ -12,11 +12,14 @@ import {
   Image
 } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
+import { useToast } from "../contexts/ToastContext";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import Animated, { 
   LinearTransition, 
   FadeIn, 
-  FadeOut 
+  FadeOut,
+  SlideInDown,
+  SlideOutDown
 } from "react-native-reanimated";
 
 interface Task {
@@ -25,7 +28,7 @@ interface Task {
   startTime: string; // e.g. "09:00 AM"
   endTime: string;   // e.g. "10:15 AM"
   category: "To Do" | "Reminder" | "Event";
-  owner: "Jonathan" | "Sarah" | "Shared";
+  owner: "Jonathan" | "Sarah" | "Shared" | "Self";
   date: number; // Day of the month
   month: number; // 0-11
   year: number;
@@ -34,7 +37,8 @@ interface Task {
 
 const AVATARS = {
   Jonathan: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop",
-  Sarah: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop"
+  Sarah: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop",
+  Self: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop"
 };
 
 const parseTimeToMinutes = (timeStr: string) => {
@@ -148,8 +152,13 @@ const HOURS = [
   "06 PM", "07 PM", "08 PM"
 ];
 
-export const CalendarScreen: React.FC = () => {
+interface CalendarScreenProps {
+  onModalToggle?: (visible: boolean) => void;
+}
+
+export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle }) => {
   const { theme, currentTheme } = useTheme();
+  const { showToast } = useToast();
 
   // "week" for Weekly Timeline, "month" for Month Grid
   const [viewMode, setViewMode] = useState<"week" | "month">("week");
@@ -167,11 +176,11 @@ export const CalendarScreen: React.FC = () => {
   const [newStart, setNewStart] = useState("09:00 AM");
   const [newEnd, setNewEnd] = useState("10:00 AM");
   const [newCategory, setNewCategory] = useState<Task["category"]>("To Do");
-  const [newOwner, setNewOwner] = useState<Task["owner"]>("Jonathan");
+  const [newOwner, setNewOwner] = useState<Task["owner"]>("Self");
 
   const handleAddTask = () => {
     if (newTitle.trim() === "") {
-      Alert.alert("Error", "Please enter an activity title.");
+      showToast("Please enter an activity title.", "error");
       return;
     }
 
@@ -193,11 +202,12 @@ export const CalendarScreen: React.FC = () => {
     }));
     
     setIsModalVisible(false);
+    if (onModalToggle) onModalToggle(false);
     setNewTitle("");
     setNewStart("09:00 AM");
     setNewEnd("10:00 AM");
     setNewCategory("To Do");
-    setNewOwner("Jonathan");
+    setNewOwner("Self");
   };
 
   const toggleTaskCompletion = (id: string) => {
@@ -339,6 +349,33 @@ export const CalendarScreen: React.FC = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
+      {/* Background Watermark Leaves */}
+      <View style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0, overflow: "hidden" }} pointerEvents="none">
+        <Ionicons 
+          name="leaf" 
+          size={350} 
+          color={theme.primary} 
+          style={{ 
+            position: "absolute", 
+            left: -100, 
+            top: -50, 
+            opacity: 0.06, 
+            transform: [{ rotate: "-35deg" }] 
+          }} 
+        />
+        <Ionicons 
+          name="leaf" 
+          size={450} 
+          color={theme.primary} 
+          style={{ 
+            position: "absolute", 
+            right: -150, 
+            bottom: 50, 
+            opacity: 0.06, 
+            transform: [{ rotate: "45deg" }] 
+          }} 
+        />
+      </View>
       
       {/* Title & Floating Header */}
       <View style={{ paddingHorizontal: 24, paddingTop: 16 }}>
@@ -581,20 +618,42 @@ export const CalendarScreen: React.FC = () => {
                           left: 10,
                           right: 0,
                           height: height - 6,
-                          backgroundColor: cardBg,
-                          borderRadius: 20,
+                          backgroundColor: theme.cardBg,
+                          borderRadius: theme.borderRadiusCard,
+                          borderWidth: theme.borderWidth,
+                          borderColor: theme.border,
                           padding: 12,
                           justifyContent: "space-between",
-                          shadowColor: "#000000",
+                          shadowColor: theme.text,
                           shadowOffset: { width: 0, height: 2 },
                           shadowOpacity: 0.03,
                           shadowRadius: 5,
-                          elevation: 1
+                          elevation: 1,
+                          overflow: 'hidden'
                         }}
                       >
                         <View className="flex-row justify-between items-start">
-                          <View style={{ flex: 1, marginRight: 8 }}>
-                            <Text style={{ color: "#1F1E24", fontFamily: "Outfit_700Bold", fontSize: 13, lineHeight: 16 }}>
+                          <View style={{ flex: 1, marginRight: 8, flexDirection: "row", flexWrap: "wrap", alignItems: "center" }}>
+                            <View 
+                              style={{ backgroundColor: `${accentColor}15`, marginTop: 1 }} 
+                              className="px-2 py-0.5 rounded-full mr-2"
+                            >
+                              <Text style={{ color: accentColor, fontFamily: "Outfit_700Bold", fontSize: 8, textTransform: "uppercase" }}>
+                                {task.category}
+                              </Text>
+                            </View>
+                            <Text 
+                              style={{ 
+                                color: theme.text, 
+                                fontFamily: "Outfit_700Bold", 
+                                fontSize: 13, 
+                                lineHeight: 16,
+                                textDecorationLine: task.completed ? "line-through" : "none",
+                                opacity: task.completed ? 0.6 : 1,
+                                flexShrink: 1
+                              }}
+                              numberOfLines={1}
+                            >
                               {task.title}
                             </Text>
                           </View>
@@ -800,7 +859,10 @@ export const CalendarScreen: React.FC = () => {
 
       {/* Floating Plus Action Button bottom-right (safe location above bottom dock) */}
       <TouchableOpacity
-        onPress={() => setIsModalVisible(true)}
+        onPress={() => {
+          setIsModalVisible(true);
+          if (onModalToggle) onModalToggle(true);
+        }}
         style={{ 
           position: "absolute",
           bottom: 100, 
@@ -823,19 +885,28 @@ export const CalendarScreen: React.FC = () => {
       </TouchableOpacity>
 
       {/* Premium Task Modal - Themed and structured */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={isModalVisible}
-        onRequestClose={() => setIsModalVisible(false)}
-      >
-        <View style={{ flex: 1, backgroundColor: "rgba(0, 0, 0, 0.4)", justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: theme.cardBg, borderTopLeftRadius: theme.borderRadiusCard, borderTopRightRadius: theme.borderRadiusCard, borderWidth: theme.borderWidth, borderColor: theme.border, padding: 24 }}>
+      {isModalVisible && (
+        <View style={[StyleSheet.absoluteFill, { zIndex: 99999, justifyContent: "flex-end" }]}>
+          {/* Translucent Backdrop */}
+          <Animated.View 
+            entering={FadeIn.duration(200)}
+            exiting={FadeOut.duration(200)}
+            style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0, 0, 0, 0.4)" }]}
+          />
+          {/* Modal Container */}
+          <Animated.View 
+            entering={SlideInDown.duration(250)}
+            exiting={SlideOutDown.duration(200)}
+            style={{ backgroundColor: theme.cardBg, borderTopLeftRadius: theme.borderRadiusCard, borderTopRightRadius: theme.borderRadiusCard, borderWidth: theme.borderWidth, borderColor: theme.border, padding: 24, paddingBottom: 40 }}
+          >
             <View className="flex-row items-center justify-between mb-6">
               <Text style={{ color: theme.text, fontFamily: "Outfit_700Bold", fontSize: 20 }}>
                 Schedule Shared Entry
               </Text>
-              <TouchableOpacity onPress={() => setIsModalVisible(false)}>
+              <TouchableOpacity onPress={() => {
+                setIsModalVisible(false);
+                if (onModalToggle) onModalToggle(false);
+              }}>
                 <Ionicons name="close-circle" size={28} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
@@ -860,49 +931,65 @@ export const CalendarScreen: React.FC = () => {
               className="p-4 mb-4"
             />
 
-            {/* Time Selector Text Inputs - Reverted to clean standard select format */}
-            <View className="flex-row mb-4">
-              <View className="flex-1 mr-2">
-                <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_600SemiBold", fontSize: 13, marginBottom: 8 }}>
-                  Start Time
-                </Text>
-                <TextInput
-                  value={newStart}
-                  onChangeText={setNewStart}
-                  placeholder="e.g. 09:00 AM"
-                  placeholderTextColor="#9CA3AF"
-                  style={{ 
-                    backgroundColor: theme.background, 
-                    color: theme.text, 
-                    fontFamily: "Outfit_500Medium", 
-                    borderColor: theme.border, 
-                    borderWidth: theme.borderWidth,
-                    borderRadius: theme.borderRadiusButton
-                  }}
-                  className="p-4"
-                />
-              </View>
+            {/* Time Selector - Horizontal Scroll Chips */}
+            <View className="mb-4">
+              <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_600SemiBold", fontSize: 13, marginBottom: 8 }}>
+                Start Time
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4" contentContainerStyle={{ paddingRight: 24 }}>
+                {HOURS.map(hour => {
+                  const timeStr = `${hour.split(" ")[0]}:00 ${hour.split(" ")[1]}`;
+                  const isSelected = newStart === timeStr;
+                  return (
+                    <TouchableOpacity
+                      key={`start-${hour}`}
+                      onPress={() => setNewStart(timeStr)}
+                      style={{
+                        backgroundColor: isSelected ? theme.primary : theme.background,
+                        borderColor: isSelected ? theme.primary : theme.border,
+                        borderWidth: theme.borderWidth,
+                        borderRadius: theme.borderRadiusButton,
+                        paddingVertical: 8,
+                        paddingHorizontal: 16,
+                        marginRight: 8
+                      }}
+                    >
+                      <Text style={{ color: isSelected ? theme.primaryContrast : theme.text, fontFamily: "Outfit_600SemiBold", fontSize: 12 }}>
+                        {timeStr}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
 
-              <View className="flex-1 ml-2">
-                <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_600SemiBold", fontSize: 13, marginBottom: 8 }}>
-                  End Time
-                </Text>
-                <TextInput
-                  value={newEnd}
-                  onChangeText={setNewEnd}
-                  placeholder="e.g. 10:15 AM"
-                  placeholderTextColor="#9CA3AF"
-                  style={{ 
-                    backgroundColor: theme.background, 
-                    color: theme.text, 
-                    fontFamily: "Outfit_500Medium", 
-                    borderColor: theme.border, 
-                    borderWidth: theme.borderWidth,
-                    borderRadius: theme.borderRadiusButton
-                  }}
-                  className="p-4"
-                />
-              </View>
+              <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_600SemiBold", fontSize: 13, marginBottom: 8 }}>
+                End Time
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 24 }}>
+                {HOURS.map(hour => {
+                  const timeStr = `${hour.split(" ")[0]}:00 ${hour.split(" ")[1]}`;
+                  const isSelected = newEnd === timeStr;
+                  return (
+                    <TouchableOpacity
+                      key={`end-${hour}`}
+                      onPress={() => setNewEnd(timeStr)}
+                      style={{
+                        backgroundColor: isSelected ? theme.primary : theme.background,
+                        borderColor: isSelected ? theme.primary : theme.border,
+                        borderWidth: theme.borderWidth,
+                        borderRadius: theme.borderRadiusButton,
+                        paddingVertical: 8,
+                        paddingHorizontal: 16,
+                        marginRight: 8
+                      }}
+                    >
+                      <Text style={{ color: isSelected ? theme.primaryContrast : theme.text, fontFamily: "Outfit_600SemiBold", fontSize: 12 }}>
+                        {timeStr}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
             </View>
 
             {/* Selector: Category & Assignee */}
@@ -911,23 +998,21 @@ export const CalendarScreen: React.FC = () => {
                 <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_600SemiBold", fontSize: 13, marginBottom: 8 }}>
                   Category
                 </Text>
-                <View className="flex-row p-1" style={{ backgroundColor: theme.background, borderRadius: theme.borderRadiusButton, borderWidth: theme.borderWidth, borderColor: theme.border }}>
+                <View className="flex-row items-center justify-between">
                   {["To Do", "Reminder", "Event"].map((cat) => (
                     <TouchableOpacity
                       key={cat}
                       onPress={() => setNewCategory(cat as any)}
                       style={{
-                        backgroundColor: newCategory === cat ? theme.primary : "transparent",
-                        flex: 1,
-                        paddingVertical: 8,
-                        borderRadius: theme.borderRadiusButton,
-                        alignItems: "center"
+                        paddingBottom: 4,
+                        borderBottomWidth: newCategory === cat ? 2 : 0,
+                        borderBottomColor: theme.text
                       }}
                     >
                       <Text style={{ 
-                        color: newCategory === cat ? theme.primaryContrast : theme.textSecondary, 
+                        color: newCategory === cat ? theme.text : theme.textSecondary, 
                         fontFamily: "Outfit_600SemiBold", 
-                        fontSize: 10
+                        fontSize: 12
                       }}>
                         {cat}
                       </Text>
@@ -936,17 +1021,17 @@ export const CalendarScreen: React.FC = () => {
                 </View>
               </View>
 
-              <View className="flex-1 ml-2">
+              <View className="flex-1 ml-4">
                 <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_600SemiBold", fontSize: 13, marginBottom: 8 }}>
                   Ownership
                 </Text>
                 <View className="flex-row p-1" style={{ backgroundColor: theme.background, borderRadius: theme.borderRadiusButton, borderWidth: theme.borderWidth, borderColor: theme.border }}>
-                  {["Jonathan", "Sarah", "Shared"].map((own) => (
+                  {["Self", "Shared"].map((own) => (
                     <TouchableOpacity
                       key={own}
                       onPress={() => setNewOwner(own as any)}
                       style={{
-                        backgroundColor: newOwner === own ? theme.primary : "transparent", // Theme Lavender selection background
+                        backgroundColor: newOwner === own ? theme.text : "transparent",
                         flex: 1,
                         paddingVertical: 8,
                         borderRadius: theme.borderRadiusButton,
@@ -956,7 +1041,7 @@ export const CalendarScreen: React.FC = () => {
                       <Text style={{ 
                         color: newOwner === own ? theme.primaryContrast : theme.textSecondary, 
                         fontFamily: "Outfit_600SemiBold", 
-                        fontSize: 10
+                        fontSize: 12
                       }}>
                         {own}
                       </Text>
@@ -976,9 +1061,9 @@ export const CalendarScreen: React.FC = () => {
                 Create Shared Entry
               </Text>
             </TouchableOpacity>
-          </View>
+          </Animated.View>
         </View>
-      </Modal>
+      )}
     </View>
   );
 };

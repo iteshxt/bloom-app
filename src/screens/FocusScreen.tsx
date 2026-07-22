@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, TouchableOpacity, ScrollView, Dimensions, StyleSheet, TextInput, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Dimensions, StyleSheet, TextInput, KeyboardAvoidingView, Platform, Alert } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
+import { useToast } from "../contexts/ToastContext";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import Svg, { Circle } from "react-native-svg";
 import Animated, {
@@ -38,16 +39,16 @@ interface Preset {
 
 export const FocusScreen: React.FC<FocusScreenProps> = ({ onFullScreenToggle }) => {
   const { theme, currentTheme } = useTheme();
+  const { showToast } = useToast();
 
   const PRESETS: Preset[] = [
-    { label: "15 min", focus: 15 * 60, break: 5 * 60, color: theme.accent },
+    { label: "15 min", focus: 15 * 60, break: 3 * 60, color: theme.accent },
     { label: "25 min", focus: 25 * 60, break: 5 * 60, color: theme.primaryDark },
     { label: "50 min", focus: 50 * 60, break: 10 * 60, color: "#3B82F6" },
   ];
 
   // Timer State
   const [activePresetIndex, setActivePresetIndex] = useState(1);
-  const [presetLayouts, setPresetLayouts] = useState<Record<number, { x: number; width: number }>>({});
   const [mode, setMode] = useState<TimerMode>("Focus");
   const [duration, setDuration] = useState(PRESETS[1].focus);
   const [timeLeft, setTimeLeft] = useState(PRESETS[1].focus);
@@ -57,37 +58,83 @@ export const FocusScreen: React.FC<FocusScreenProps> = ({ onFullScreenToggle }) 
   const [chatText, setChatText] = useState("");
   const [showCelebration, setShowCelebration] = useState(false);
   const [totalFocusedMinutes, setTotalFocusedMinutes] = useState(85);
+  const [completedSessions, setCompletedSessions] = useState(0);
 
   // Animations
   const progress = useSharedValue(1);
   const bgScale = useSharedValue(0);
 
-  const currentColor = mode === "Focus" ? PRESETS[activePresetIndex].color : theme.warning;
+  const breakColor = theme.statusBar === "light" ? "#4B5563" : "#9CA3AF";
+  const currentColor = mode === "Focus" ? PRESETS[activePresetIndex].color : breakColor;
 
-  // Handle Timer Ticking
+  // Handle Timer Ticking (Robust drift-free implementation)
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
-    if (isRunning && timeLeft > 0) {
+    if (isRunning) {
       interval = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
-        progress.value = withTiming(timeLeft / totalDuration, { duration: 1000, easing: Easing.linear });
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          const nextTime = prev - 1;
+          progress.value = withTiming(nextTime / totalDuration, { duration: 1000, easing: Easing.linear });
+          return nextTime;
+        });
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isRunning, timeLeft]);
+  }, [isRunning, totalDuration]);
+
+  const formatDuration = (secs: number) => {
+    if (secs < 60) return `${secs} sec`;
+    return `${Math.floor(secs / 60)} min`;
+  };
 
   useEffect(() => {
     if (timeLeft === 0 && isRunning) {
-      setIsRunning(false);
       if (currentMode === "Focus") {
-        setTotalFocusedMinutes(prev => prev + Math.floor(totalDuration / 60));
+        // Focus session finished!
+        const elapsedMinutes = Math.floor(totalDuration / 60);
+        setTotalFocusedMinutes(prev => prev + elapsedMinutes);
+        
+        // Transition to Break mode automatically
+        const breakDuration = PRESETS[activePresetIndex].break;
+        setTimeLeft(breakDuration);
+        setTotalDuration(breakDuration);
+        setCurrentMode("Break");
+        setMode("Break");
+        
+        // Restart ticking in Break mode
+        setIsRunning(true);
+        progress.value = 1;
+
+        showToast(`Focus Completed! Starting your ${formatDuration(breakDuration)} break.`, "success");
+      } else {
+        // Break session finished!
+        setCompletedSessions(prev => prev + 1);
+
+        // Transition back to Focus mode automatically
+        const focusDuration = PRESETS[activePresetIndex].focus;
+        setTimeLeft(focusDuration);
+        setTotalDuration(focusDuration);
+        setCurrentMode("Focus");
+        setMode("Focus");
+
+        // Restart ticking in Focus mode
+        setIsRunning(true);
+        progress.value = 1;
+
+        showToast("Break Finished! Starting next Focus session.", "success");
       }
+      
       setShowCelebration(true);
       setTimeout(() => setShowCelebration(false), 3000);
-      if (onFullScreenToggle) onFullScreenToggle(false);
-      bgScale.value = withTiming(0, { duration: 500, easing: Easing.out(Easing.ease) });
+      
+      // Keep background scaled up for active mode
+      bgScale.value = withTiming(2.5, { duration: 500, easing: Easing.out(Easing.ease) });
     }
-  }, [timeLeft, isRunning]);
+  }, [timeLeft, isRunning, currentMode, activePresetIndex, totalDuration]);
 
   const toggleTimer = () => {
     if (!isRunning) {
@@ -164,6 +211,34 @@ export const FocusScreen: React.FC<FocusScreenProps> = ({ onFullScreenToggle }) 
       style={{ flex: 1, backgroundColor: theme.background }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
+      {/* Background Watermark Leaves */}
+      <View style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0, overflow: "hidden" }} pointerEvents="none">
+        <Ionicons 
+          name="leaf" 
+          size={350} 
+          color={theme.primary} 
+          style={{ 
+            position: "absolute", 
+            left: -100, 
+            top: -50, 
+            opacity: 0.06, 
+            transform: [{ rotate: "-35deg" }] 
+          }} 
+        />
+        <Ionicons 
+          name="leaf" 
+          size={450} 
+          color={theme.primary} 
+          style={{ 
+            position: "absolute", 
+            right: -150, 
+            bottom: 50, 
+            opacity: 0.06, 
+            transform: [{ rotate: "45deg" }] 
+          }} 
+        />
+      </View>
+
       <View style={[StyleSheet.absoluteFill, { justifyContent: "center", alignItems: "center" }]} pointerEvents="none">
         <Animated.View
           style={[
@@ -190,7 +265,7 @@ export const FocusScreen: React.FC<FocusScreenProps> = ({ onFullScreenToggle }) 
         <Animated.View style={[{ alignSelf: "flex-start", backgroundColor: theme.cardBg, borderRadius: theme.borderRadiusButton, borderWidth: theme.borderWidth, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 6, flexDirection: "row", alignItems: "center", marginBottom: 24 }, fadeOutStyle]}>
           <Ionicons name="flame" size={14} color="#FF6D00" />
           <Text style={{ fontFamily: "Outfit_500Medium", color: theme.textSecondary, fontSize: 13, marginLeft: 6 }}>
-            Today: <Text style={{ fontFamily: "Outfit_700Bold", color: theme.text }}>{Math.floor(totalFocusedMinutes / 60)}h {totalFocusedMinutes % 60}m</Text> focused
+            Today: <Text style={{ fontFamily: "Outfit_700Bold", color: theme.text }}>{Math.floor(totalFocusedMinutes / 60)}h {totalFocusedMinutes % 60}m</Text> focused • <Text style={{ fontFamily: "Outfit_700Bold", color: theme.text }}>{completedSessions}</Text> {completedSessions === 1 ? "session" : "sessions"}
           </Text>
         </Animated.View>
 
@@ -207,20 +282,20 @@ export const FocusScreen: React.FC<FocusScreenProps> = ({ onFullScreenToggle }) 
           }, fadeOutStyle]}
           pointerEvents={isRunning ? "none" : "auto"}
         >
-          {presetLayouts[activePresetIndex] && (
+          <View style={{ position: "absolute", top: 4, bottom: 4, left: 4, right: 4 }}>
             <Animated.View
               style={{
                 position: "absolute",
-                top: 4,
-                bottom: 4,
-                left: presetLayouts[activePresetIndex].x,
-                width: presetLayouts[activePresetIndex].width,
+                top: 0,
+                bottom: 0,
+                left: activePresetIndex === 0 ? "0%" : (activePresetIndex === 1 ? "33.33%" : "66.66%"),
+                width: "33.33%",
                 backgroundColor: currentColor,
                 borderRadius: theme.borderRadiusButton,
               }}
-              layout={LinearTransition.duration(300)}
+              layout={LinearTransition.duration(200)}
             />
-          )}
+          </View>
 
           {PRESETS.map((preset, idx) => {
             const isSelected = activePresetIndex === idx;
@@ -228,13 +303,6 @@ export const FocusScreen: React.FC<FocusScreenProps> = ({ onFullScreenToggle }) 
               <TouchableOpacity
                 key={idx}
                 onPress={() => resetTimer(preset.focus, "Focus", idx)}
-                onLayout={(e) => {
-                  const layout = e.nativeEvent.layout;
-                  setPresetLayouts(prev => ({
-                    ...prev,
-                    [idx]: { x: layout.x, width: layout.width }
-                  }));
-                }}
                 style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 12, zIndex: 2 }}
                 activeOpacity={0.8}
               >
