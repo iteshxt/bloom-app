@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   View, 
   Text, 
@@ -11,7 +11,9 @@ import {
   Alert,
   Image,
   TouchableWithoutFeedback,
-  Platform
+  Platform,
+  Animated as AnimatedRN,
+  PanResponder
 } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
 import { useToast } from "../contexts/ToastContext";
@@ -58,6 +60,155 @@ const parseTimeToMinutes = (timeStr: string) => {
     hours += 12;
   }
   return hours * 60 + minutes;
+};
+
+const formatMinutesToTime = (mins: number) => {
+  let hours = Math.floor(mins / 60);
+  const minutes = mins % 60;
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  const padMins = minutes.toString().padStart(2, "0");
+  const padHours = hours.toString().padStart(2, "0");
+  return `${padHours}:${padMins} ${ampm}`;
+};
+
+interface DraggableTimelineCardProps {
+  task: Task;
+  top: number;
+  height: number;
+  accentColor: string;
+  theme: any;
+  currentTheme: string;
+  getFontFamily: (weight: "Regular" | "Medium" | "Bold") => string;
+  getIcon: () => React.ReactNode;
+  renderAvatars: (owner: Task["owner"], size: number) => React.ReactNode;
+  onTimeChange: (taskId: string, deltaMinutes: number) => void;
+  pixelsPerMinute: number;
+}
+
+const DraggableTimelineCard: React.FC<DraggableTimelineCardProps> = ({
+  task,
+  top,
+  height,
+  accentColor,
+  theme,
+  currentTheme,
+  getFontFamily,
+  getIcon,
+  renderAvatars,
+  onTimeChange,
+  pixelsPerMinute
+}) => {
+  const panY = useRef(new AnimatedRN.Value(0)).current;
+  const [isDragging, setIsDragging] = useState(false);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dy) > 4;
+      },
+      onPanResponderGrant: () => {
+        setIsDragging(true);
+      },
+      onPanResponderMove: (_, gestureState) => {
+        panY.setValue(gestureState.dy);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        setIsDragging(false);
+        const dragDistance = gestureState.dy;
+        const deltaMinutes = Math.round(dragDistance / pixelsPerMinute);
+        const snapInterval = 15;
+        const snappedDelta = Math.round(deltaMinutes / snapInterval) * snapInterval;
+
+        if (snappedDelta !== 0) {
+          onTimeChange(task.id, snappedDelta);
+        }
+        
+        AnimatedRN.spring(panY, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 40,
+          friction: 7
+        }).start();
+      },
+      onPanResponderTerminate: () => {
+        setIsDragging(false);
+        AnimatedRN.spring(panY, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 40,
+          friction: 7
+        }).start();
+      }
+    })
+  ).current;
+
+  return (
+    <AnimatedRN.View
+      {...panResponder.panHandlers}
+      style={{
+        position: "absolute",
+        top: top,
+        left: 10,
+        right: 0,
+        height: height - 6,
+        transform: [{ translateY: panY }],
+        backgroundColor: theme.cardBg,
+        borderRadius: theme.borderRadiusCard,
+        borderWidth: theme.borderWidth,
+        borderColor: isDragging ? theme.primary : theme.border,
+        padding: 12,
+        justifyContent: "space-between",
+        shadowColor: theme.text,
+        shadowOffset: { width: 0, height: isDragging ? 6 : 2 },
+        shadowOpacity: isDragging ? theme.shadowOpacity * 2 : theme.shadowOpacity,
+        shadowRadius: isDragging ? theme.shadowRadius * 1.5 : theme.shadowRadius,
+        elevation: isDragging ? 4 : (theme.shadowOpacity > 0 ? 1 : 0),
+        zIndex: isDragging ? 99 : 10,
+        overflow: 'hidden'
+      }}
+    >
+      <View className="flex-row justify-between items-start">
+        <View style={{ flex: 1, marginRight: 8, flexDirection: "row", flexWrap: "wrap", alignItems: "center" }}>
+          <View 
+            style={{ backgroundColor: `${accentColor}15`, marginTop: 1 }} 
+            className="px-2 py-0.5 rounded-full mr-2"
+          >
+            <Text style={{ color: accentColor, fontFamily: getFontFamily("Bold"), fontSize: 8, textTransform: "uppercase" }}>
+              {task.category}
+            </Text>
+          </View>
+          <Text 
+            style={{ 
+              color: theme.text, 
+              fontFamily: getFontFamily("Bold"), 
+              fontSize: 13, 
+              lineHeight: 16,
+              textDecorationLine: task.completed ? "line-through" : "none",
+              opacity: task.completed ? 0.6 : 1,
+              flexShrink: 1
+            }}
+            numberOfLines={1}
+          >
+            {task.title}
+          </Text>
+        </View>
+        {getIcon()}
+      </View>
+
+      <View className="flex-row items-center justify-between mt-1">
+        <View className="flex-row items-center">
+          <Feather name="clock" size={11} color={theme.textSecondary} style={{ marginRight: 4 }} />
+          <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 9 }}>
+            {task.startTime.replace(" ", "")} - {task.endTime.replace(" ", "")}
+          </Text>
+        </View>
+        {renderAvatars(task.owner, 20)}
+      </View>
+    </AnimatedRN.View>
+  );
 };
 
 // Generate relative mock data so there are always active items on "Today"
@@ -222,6 +373,34 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
 
   const toggleTaskCompletion = (id: string) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  };
+
+  const handleTimeChange = (taskId: string, deltaMinutes: number) => {
+    setTasks(prev => prev.map(t => {
+      if (t.id === taskId) {
+        const startM = parseTimeToMinutes(t.startTime);
+        const endM = parseTimeToMinutes(t.endTime);
+        const duration = endM - startM;
+        
+        let newStartM = startM + deltaMinutes;
+        // Limit start time between 8:00 AM (480 mins) and 8:00 PM (1200 mins) minus duration
+        newStartM = Math.max(480, Math.min(1200 - duration, newStartM));
+        const newEndM = newStartM + duration;
+        
+        const newStart = formatMinutesToTime(newStartM);
+        const newEnd = formatMinutesToTime(newEndM);
+        
+        return {
+          ...t,
+          startTime: newStart,
+          endTime: newEnd
+        };
+      }
+      return t;
+    }).sort((a, b) => {
+      return parseTimeToMinutes(a.startTime) - parseTimeToMinutes(b.startTime);
+    }));
+    showToast("Task rescheduled successfully!", "success");
   };
 
   const getWeekDays = (selectedDate: Date) => {
@@ -439,17 +618,19 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
             borderColor: theme.border, 
             borderWidth: theme.borderWidth, 
             borderRadius: theme.borderRadiusCard,
-            position: "relative" 
+            position: "relative",
+            height: 44,
+            padding: 4
           }} 
-          className="flex-row p-1 mb-5"
+          className="flex-row mb-5"
         >
           <Animated.View 
             style={{
               position: "absolute",
               top: 4,
               bottom: 4,
-              left: viewMode === "week" ? "1%" : "51%",
-              width: "48%",
+              left: viewMode === "week" ? 4 : "50%",
+              right: viewMode === "week" ? "50%" : 4,
               backgroundColor: theme.primary,
               borderRadius: theme.borderRadiusButton,
             }}
@@ -458,12 +639,12 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
 
           <TouchableOpacity 
             onPress={() => setViewMode("week")}
-            className="flex-1 py-2 items-center justify-center rounded-full"
+            className="flex-1 items-center justify-center"
             style={{ zIndex: 2 }}
           >
             <Text style={{ 
               color: viewMode === "week" ? theme.primaryContrast : theme.textSecondary,
-              fontFamily: "Outfit_600SemiBold", 
+              fontFamily: getFontFamily("Bold"), 
               fontSize: 13 
             }}>
               Timeline
@@ -472,12 +653,12 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
           
           <TouchableOpacity 
             onPress={() => setViewMode("month")}
-            className="flex-1 py-2 items-center justify-center rounded-full"
+            className="flex-1 items-center justify-center"
             style={{ zIndex: 2 }}
           >
             <Text style={{ 
               color: viewMode === "month" ? theme.primaryContrast : theme.textSecondary,
-              fontFamily: "Outfit_600SemiBold", 
+              fontFamily: getFontFamily("Bold"), 
               fontSize: 13 
             }}>
               Month Grid
@@ -619,67 +800,20 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
                     };
 
                     return (
-                      <TouchableOpacity
+                      <DraggableTimelineCard
                         key={task.id}
-                        activeOpacity={0.9}
-                        style={{
-                          position: "absolute",
-                          top: top,
-                          left: 10,
-                          right: 0,
-                          height: height - 6,
-                          backgroundColor: theme.cardBg,
-                          borderRadius: theme.borderRadiusCard,
-                          borderWidth: theme.borderWidth,
-                          borderColor: theme.border,
-                          padding: 12,
-                          justifyContent: "space-between",
-                          shadowColor: theme.text,
-                          shadowOffset: { width: 0, height: 2 },
-                          shadowOpacity: 0.03,
-                          shadowRadius: 5,
-                          elevation: 1,
-                          overflow: 'hidden'
-                        }}
-                      >
-                        <View className="flex-row justify-between items-start">
-                          <View style={{ flex: 1, marginRight: 8, flexDirection: "row", flexWrap: "wrap", alignItems: "center" }}>
-                            <View 
-                              style={{ backgroundColor: `${accentColor}15`, marginTop: 1 }} 
-                              className="px-2 py-0.5 rounded-full mr-2"
-                            >
-                              <Text style={{ color: accentColor, fontFamily: "Outfit_700Bold", fontSize: 8, textTransform: "uppercase" }}>
-                                {task.category}
-                              </Text>
-                            </View>
-                            <Text 
-                              style={{ 
-                                color: theme.text, 
-                                fontFamily: "Outfit_700Bold", 
-                                fontSize: 13, 
-                                lineHeight: 16,
-                                textDecorationLine: task.completed ? "line-through" : "none",
-                                opacity: task.completed ? 0.6 : 1,
-                                flexShrink: 1
-                              }}
-                              numberOfLines={1}
-                            >
-                              {task.title}
-                            </Text>
-                          </View>
-                          {getIcon()}
-                        </View>
-
-                        <View className="flex-row items-center justify-between mt-1">
-                          <View className="flex-row items-center">
-                            <Feather name="clock" size={11} color={theme.textSecondary} style={{ marginRight: 4 }} />
-                            <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_500Medium", fontSize: 9 }}>
-                              {task.startTime.replace(" ", "")} - {task.endTime.replace(" ", "")}
-                            </Text>
-                          </View>
-                          {renderAvatars(task.owner, 20)}
-                        </View>
-                      </TouchableOpacity>
+                        task={task}
+                        top={top}
+                        height={height}
+                        accentColor={accentColor}
+                        theme={theme}
+                        currentTheme={currentTheme}
+                        getFontFamily={getFontFamily}
+                        getIcon={getIcon}
+                        renderAvatars={renderAvatars}
+                        onTimeChange={handleTimeChange}
+                        pixelsPerMinute={pixelsPerMinute}
+                      />
                     );
                   })
                 ) : (
@@ -806,11 +940,11 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
                       borderColor: theme.border, 
                       borderWidth: theme.borderWidth,
                       borderRadius: theme.borderRadiusCard,
-                      shadowColor: "#000000",
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: currentTheme === "mario" ? 0 : 0.02,
-                      shadowRadius: 6,
-                      elevation: 1,
+                      shadowColor: theme.text,
+                      shadowOffset: { width: 0, height: theme.shadowRadius > 0 ? Math.round(theme.shadowRadius / 4) : 0 },
+                      shadowOpacity: theme.shadowOpacity,
+                      shadowRadius: theme.shadowRadius,
+                      elevation: theme.shadowOpacity > 0 ? 1 : 0,
                       marginBottom: 10
                     }} 
                     className="p-4 flex-row items-center justify-between"
@@ -824,15 +958,15 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
                       
                       <View className="flex-1">
                         <Text style={{ 
-                          color: "#1F1E24", 
-                          fontFamily: "Outfit_700Bold", 
-                          fontSize: 13, 
+                          color: theme.text, 
+                          fontFamily: getFontFamily("Bold"), 
+                          fontSize: 14, 
                           textDecorationLine: item.completed ? "line-through" : "none",
                           opacity: item.completed ? 0.6 : 1 
                         }}>
                           {item.title}
                         </Text>
-                        <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_500Medium", fontSize: 10, marginTop: 2 }}>
+                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 10, marginTop: 2 }}>
                           {item.category} • {item.startTime} - {item.endTime}
                         </Text>
                       </View>
