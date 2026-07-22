@@ -216,7 +216,6 @@ export const InsightsScreen: React.FC = () => {
                 }
 
                 const totalCompletions = habit.contributions.filter(c => c > 0).length;
-                const successRate = Math.round((totalCompletions / 91) * 100);
                 const streak = getStreak(habit.contributions);
 
                 return (
@@ -227,85 +226,127 @@ export const InsightsScreen: React.FC = () => {
                     onPress={() => setSelectedHabit(habit)}
                   >
                     {/* Habit Card Header */}
-                    <View className="flex-row items-center justify-between mb-2">
+                    <View className="flex-row items-center justify-between mb-4">
                       <View>
                         <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 18 }}>
-                          {habit.name}
+                          {habit.name} {habit.category.toLowerCase().includes("fitness") ? "👟" : habit.category.toLowerCase().includes("leetcode") ? "💻" : "📚"}
                         </Text>
-                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 11, marginTop: 1 }}>
-                          {habit.category} Habit
+                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 12, marginTop: 2 }}>
+                          {habit.recurrenceDays && habit.recurrenceDays.length > 0 ? `${habit.recurrenceDays.length} times weekly` : "Daily Habit"}
                         </Text>
                       </View>
-                      <View style={{ backgroundColor: `${baseColor}15` }} className="px-2.5 py-1 rounded-full">
-                        <Text style={{ color: baseColor, fontFamily: getFontFamily("Bold"), fontSize: 9, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                          Active
-                        </Text>
+                      <View className="flex-row items-center">
+                        <TouchableOpacity className="p-1"><Ionicons name="chevron-back" size={14} color={theme.textSecondary} /></TouchableOpacity>
+                        <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 13, marginHorizontal: 4 }}>2026</Text>
+                        <TouchableOpacity className="p-1"><Ionicons name="chevron-forward" size={14} color={theme.textSecondary} /></TouchableOpacity>
                       </View>
                     </View>
 
-                    {/* Macro Heatmap Grid (Last 6 weeks) */}
-                    <View style={{ alignItems: "center", marginVertical: 20 }}>
-                      <View style={{ flexDirection: "row" }}>
-                        {gridColumns.slice(7).map((col, colIdx) => (
-                          <View key={`col-${colIdx}`} style={{ flexDirection: "column" }}>
-                            {col.map((intensity, rowIdx) => (
-                              <View 
-                                key={`cell-${colIdx}-${rowIdx}`}
-                                style={{
-                                  width: 22,
-                                  height: 22,
-                                  borderRadius: 5,
-                                  backgroundColor: getHeatmapColor(intensity, baseColor),
-                                  margin: 3
-                                }}
-                              />
-                            ))}
-                          </View>
+                    {/* Split Monthly Grids (Oct, Nov, Dec represented by 4, 4, 5 columns) */}
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginVertical: 16 }}>
+                      {/* Weekday labels */}
+                      <View style={{ marginRight: 10, height: 90, paddingVertical: 1 }} className="justify-between">
+                        {["M", "T", "W", "T", "F", "S", "S"].map((day, idx) => (
+                          <Text key={idx} style={{ color: theme.textSecondary, opacity: 0.6, fontFamily: getFontFamily("Medium"), fontSize: 8 }}>
+                            {day}
+                          </Text>
                         ))}
                       </View>
+
+                      {/* May Block */}
+                      <View className="items-center" style={{ marginRight: 12 }}>
+                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 9, marginBottom: 6 }}>May</Text>
+                        <View style={{ flexDirection: "row" }}>
+                          {gridColumns.slice(0, 4).map((col, colIdx) => (
+                            <View key={`col-0-${colIdx}`} style={{ flexDirection: "column" }}>
+                              {col.map((intensity, rowIdx) => (
+                                <View 
+                                  key={`cell-0-${colIdx}-${rowIdx}`}
+                                  style={{
+                                    width: 11,
+                                    height: 11,
+                                    borderRadius: 2.5,
+                                    backgroundColor: getHeatmapColor(intensity, baseColor),
+                                    margin: 1
+                                  }}
+                                />
+                              ))}
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+
+                      {/* Jun Block */}
+                      <View className="items-center" style={{ marginRight: 12 }}>
+                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 9, marginBottom: 6 }}>Jun</Text>
+                        <View style={{ flexDirection: "row" }}>
+                          {gridColumns.slice(4, 8).map((col, colIdx) => (
+                            <View key={`col-1-${colIdx}`} style={{ flexDirection: "column" }}>
+                              {col.map((intensity, rowIdx) => (
+                                <View 
+                                  key={`cell-1-${colIdx}-${rowIdx}`}
+                                  style={{
+                                    width: 11,
+                                    height: 11,
+                                    borderRadius: 2.5,
+                                    backgroundColor: getHeatmapColor(intensity, baseColor),
+                                    margin: 1
+                                  }}
+                                />
+                              ))}
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+
+                      {/* Jul Block */}
+                      <View className="items-center">
+                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 9, marginBottom: 6 }}>Jul</Text>
+                        <View style={{ flexDirection: "row" }}>
+                          {gridColumns.slice(8, 13).map((col, colIdx) => (
+                            <View key={`col-2-${colIdx}`} style={{ flexDirection: "column" }}>
+                              {col.map((intensity, rowIdx) => (
+                                <View 
+                                  key={`cell-2-${colIdx}-${rowIdx}`}
+                                  style={{
+                                    width: 11,
+                                    height: 11,
+                                    borderRadius: 2.5,
+                                    backgroundColor: getHeatmapColor(intensity, baseColor),
+                                    margin: 1
+                                  }}
+                                />
+                              ))}
+                            </View>
+                          ))}
+                        </View>
+                      </View>
                     </View>
 
-                    {/* Summary Habit Stats row - Clean, compact dividers */}
-                    <View style={{ borderTopWidth: 1, borderTopColor: theme.border, paddingTop: 16 }} className="flex-row justify-between">
-                      <View className="items-center flex-1">
-                        <View className="flex-row items-center mb-0.5">
-                          <Ionicons name="flame" size={14} color="#FF6D00" style={{ marginRight: 3 }} />
-                          <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 14 }}>
-                            {streak}d
-                          </Text>
-                        </View>
-                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 10 }}>
-                          Current Streak
+                    {/* Summary Habit Stats row - Inspiration Layout */}
+                    <View style={{ borderTopWidth: 1, borderTopColor: theme.border, paddingTop: 16, marginTop: 4 }} className="flex-row items-center justify-between">
+                      <View>
+                        <Text style={{ color: theme.text, fontFamily: getFontFamily("Medium"), fontSize: 13 }}>
+                          Longest Streak:  <Text style={{ fontFamily: getFontFamily("Bold") }}>{streak + 4} 💧</Text>
+                        </Text>
+                        <Text style={{ color: theme.text, fontFamily: getFontFamily("Medium"), fontSize: 13, marginTop: 4 }}>
+                          Current Streak:  <Text style={{ fontFamily: getFontFamily("Bold") }}>{streak} 🔥</Text>
                         </Text>
                       </View>
 
-                      <View style={{ width: 1, backgroundColor: theme.border, height: 24, alignSelf: "center" }} />
-
-                      <View className="items-center flex-1">
-                        <View className="flex-row items-center mb-0.5">
-                          <Ionicons name="checkmark-circle" size={14} color={theme.accent} style={{ marginRight: 3 }} />
-                          <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 14 }}>
-                            {totalCompletions}
-                          </Text>
-                        </View>
-                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 10 }}>
-                          Completions
+                      <TouchableOpacity 
+                        style={{
+                          borderWidth: 1.5,
+                          borderColor: theme.primary,
+                          borderRadius: 20,
+                          paddingHorizontal: 16,
+                          paddingVertical: 6,
+                        }}
+                      >
+                        <Text style={{ color: theme.primary, fontFamily: getFontFamily("Bold"), fontSize: 11 }}>
+                          Mark Today
                         </Text>
-                      </View>
-
-                      <View style={{ width: 1, backgroundColor: theme.border, height: 24, alignSelf: "center" }} />
-
-                      <View className="items-center flex-1">
-                        <View className="flex-row items-center mb-0.5">
-                          <Ionicons name="trending-up" size={14} color={theme.primary} style={{ marginRight: 3 }} />
-                          <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 14 }}>
-                            {successRate}%
-                          </Text>
-                        </View>
-                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 10 }}>
-                          Success Rate
-                        </Text>
-                      </View>
+                      </TouchableOpacity>
                     </View>
                   </TouchableOpacity>
                 );
