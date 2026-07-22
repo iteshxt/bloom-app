@@ -103,8 +103,8 @@ function AppContent() {
     Animated.parallel([
       Animated.spring(logoScale, {
         toValue: 1,
-        tension: 18,
-        friction: 6,
+        tension: theme.animationTension,
+        friction: theme.animationFriction,
         useNativeDriver: true,
       }),
       Animated.timing(logoOpacity, {

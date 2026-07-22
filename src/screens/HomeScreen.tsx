@@ -492,10 +492,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
     padding: 24,
     marginBottom: 20,
     shadowColor: theme.text,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: currentTheme === "mario" ? 0 : 0.03,
-    shadowRadius: 16,
-    elevation: 2
+    shadowOffset: { width: 0, height: theme.shadowRadius > 0 ? Math.round(theme.shadowRadius / 2) : 0 },
+    shadowOpacity: theme.shadowOpacity,
+    shadowRadius: theme.shadowRadius,
+    elevation: theme.shadowOpacity > 0 ? 2 : 0
   };
 
   const buttonStyle = {
