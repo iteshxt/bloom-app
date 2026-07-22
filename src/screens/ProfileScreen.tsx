@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme, THEMES, ThemeSlug } from "../contexts/ThemeContext";
+import { useToast } from "../contexts/ToastContext";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 
@@ -34,6 +35,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
     currentStreak, 
     updateStreakAndEvaluateThemes 
   } = useTheme();
+  const { showToast } = useToast();
 
   // Profile fields state
   const [displayName, setDisplayName] = useState("Jonathan");
@@ -63,7 +65,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
 
   const handleSaveProfile = () => {
     if (tempName.trim() === "") {
-      Alert.alert("Error", "Name cannot be empty.");
+      showToast("Name cannot be empty.", "error");
       return;
     }
     setDisplayName(tempName);
@@ -83,6 +85,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
           style: "destructive",
           onPress: () => {
             setIsPartnerConnected(false);
+            showToast("Partner disconnected.", "success");
           } 
         }
       ]
@@ -91,12 +94,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
 
   const handleConnectPartner = () => {
     if (partnerCode.trim().length < 4) {
-      Alert.alert("Error", "Please enter a valid 6-character partner invite code.");
+      showToast("Please enter a valid 6-character partner invite code.", "error");
       return;
     }
     setIsPartnerConnected(true);
     setPartnerCode("");
-    Alert.alert("Connected!", "You are now linked with Sarah's garden!");
+    showToast("Connected! You are now linked with Sarah's garden!", "success");
   };
 
   // Determine active font fallback based on theme
@@ -559,7 +562,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
           </View>
           
           <TouchableOpacity 
-            onPress={() => Alert.alert("Signed Out", "You have successfully signed out.")}
+            onPress={() => showToast("You have successfully signed out.", "success")}
             style={{ 
               backgroundColor: `${theme.warning}15`, 
               borderRadius: theme.borderRadiusButton,
