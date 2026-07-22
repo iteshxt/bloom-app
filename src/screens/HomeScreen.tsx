@@ -760,7 +760,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
               <TouchableOpacity 
                 style={{ 
                   backgroundColor: theme.primary, 
-                  borderRadius: 999,
+                  borderRadius: theme.borderRadiusButton,
                   flexShrink: 0
                 }}
                 className="flex-row items-center px-5 py-2.5"

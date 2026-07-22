@@ -1014,7 +1014,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
           backgroundColor: theme.primary,
           width: 56,
           height: 56,
-          borderRadius: 28,
+          borderRadius: theme.borderRadiusButton,
           alignItems: "center",
           justifyContent: "center",
           shadowColor: theme.primary,

@@ -1,6 +1,6 @@
 {
   "name": "temp-expo-app",
-  "version": "1.0.0",
+  "version": "0.6.0",
   "main": "index.ts",
   "dependencies": {
     "@expo-google-fonts/outfit": "^0.4.3",

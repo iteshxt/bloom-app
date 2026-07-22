@@ -134,48 +134,15 @@ function AppContent() {
     }
   }, [isAppLoading, minTimePassed]);
 
-  // Use refs to avoid stale closures in PanResponder callbacks
-  const activeTabRef = useRef(activeTab);
-  activeTabRef.current = activeTab;
-  const isFullScreenRef = useRef(isFullScreen);
-  isFullScreenRef.current = isFullScreen;
-  const isSwipingTaskRef = useRef(false);
-
-  const TABS_ORDER: TabSlug[] = ["home", "focus", "calendar", "insights"];
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        if (isFullScreenRef.current) return false;
-        if (isSwipingTaskRef.current) return false;
-        return Math.abs(gestureState.dx) > 40 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 3.5;
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        const index = TABS_ORDER.indexOf(activeTabRef.current);
-        if (gestureState.dx > 60) {
-          // Swipe Right -> Go Previous
-          if (index > 0) {
-            setActiveTab(TABS_ORDER[index - 1]);
-          }
-        } else if (gestureState.dx < -60) {
-          // Swipe Left -> Go Next
-          if (index < TABS_ORDER.length - 1) {
-            setActiveTab(TABS_ORDER[index + 1]);
-          }
-        }
-      }
-    })
-  ).current;
-
   // Render screens conditionally based on navigation state
   if (showProfile) {
     return <ProfileScreen onBack={() => setShowProfile(false)} />;
   }
 
-  const renderScreen = (onSwipeTask: (swiping: boolean) => void) => {
+  const renderScreen = () => {
     switch (activeTab) {
       case "home":
-        return <HomeScreen onNavigateToProfile={() => setShowProfile(true)} onSwipeTask={onSwipeTask} onModalToggle={setIsFullScreen} />;
+        return <HomeScreen onNavigateToProfile={() => setShowProfile(true)} onModalToggle={setIsFullScreen} />;
       case "focus":
         return <FocusScreen onFullScreenToggle={setIsFullScreen} />;
       case "calendar":
@@ -191,10 +158,8 @@ function AppContent() {
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={["top"]}>
       <StatusBar style={theme.statusBar} />
       
-      <View key={currentTheme} style={{ flex: 1 }} {...panResponder.panHandlers}>
-        {renderScreen((swiping) => {
-          isSwipingTaskRef.current = swiping;
-        })}
+      <View key={currentTheme} style={{ flex: 1 }}>
+        {renderScreen()}
       </View>
 
       {/* Persistent Floating Bottom Dock Navigation */}
