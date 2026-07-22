@@ -569,7 +569,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
       {/* Title & Floating Header */}
       <View style={{ paddingHorizontal: 24, paddingTop: 16 }}>
         <View className="flex-row items-center justify-between mb-4">
-          <Text style={{ color: theme.text, fontFamily: "Outfit_700Bold", fontSize: 24 }}>
+          <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 24 }}>
             Calendar
           </Text>
           
@@ -587,7 +587,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
                 <Ionicons name="chevron-back" size={16} color={theme.text} />
               </TouchableOpacity>
               
-              <Text style={{ color: theme.text, fontFamily: "Outfit_700Bold", fontSize: 13, marginHorizontal: 8 }}>
+              <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 13, marginHorizontal: 8 }}>
                 {currentDate.toLocaleDateString("default", { month: "short", year: "2-digit" })}
               </Text>
 
@@ -605,7 +605,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
           )}
 
           {viewMode === "week" && (
-            <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_700Bold", fontSize: 14 }}>
+            <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Bold"), fontSize: 14 }}>
               {currentDate.toLocaleDateString("default", { month: "long", day: "numeric" })}
             </Text>
           )}
@@ -690,7 +690,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
                   >
                     <Text style={{ 
                       color: theme.textSecondary, 
-                      fontFamily: "Outfit_600SemiBold", 
+                      fontFamily: getFontFamily("Bold"), 
                       fontSize: 11,
                       marginBottom: 6 
                     }}>
@@ -709,7 +709,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
                     >
                       <Text style={{ 
                         color: isSelected ? theme.primaryContrast : theme.text, 
-                        fontFamily: "Outfit_700Bold", 
+                        fontFamily: getFontFamily("Bold"), 
                         fontSize: 13 
                       }}>
                         {dayVal}
@@ -731,7 +731,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
               <View style={{ width: 50, paddingTop: 10 }}>
                 {HOURS.map((hour, idx) => (
                   <View key={idx} style={{ height: HOUR_HEIGHT, justifyContent: "flex-start" }}>
-                    <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_600SemiBold", fontSize: 12, textAlign: "right", paddingRight: 10 }}>
+                    <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Bold"), fontSize: 12, textAlign: "right", paddingRight: 10 }}>
                       {hour}
                     </Text>
                   </View>
@@ -841,7 +841,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
                   key={dayName} 
                   style={{ 
                     color: theme.textSecondary, 
-                    fontFamily: "Outfit_600SemiBold", 
+                    fontFamily: getFontFamily("Bold"), 
                     fontSize: 11, 
                     textAlign: "center", 
                     width: `${100 / 7}%` 
@@ -884,7 +884,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
                     >
                       <Text style={{
                         color: isSelected ? theme.primaryContrast : isCurrentMonth ? theme.text : `${theme.text}40`,
-                        fontFamily: isSelected ? "Outfit_700Bold" : "Outfit_500Medium",
+                        fontFamily: isSelected ? getFontFamily("Bold") : getFontFamily("Medium"),
                         fontSize: 13
                       }}>
                         {dayItem.day}
@@ -922,7 +922,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
             }}
             className="mb-4"
           >
-            <Text style={{ color: theme.text, fontFamily: "Outfit_700Bold", fontSize: 16 }}>
+            <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 16 }}>
               Today's Tasks
             </Text>
           </View>
@@ -992,7 +992,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
               })
             ) : (
               <View className="py-8 items-center justify-center">
-                <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_500Medium", fontSize: 12 }}>
+                <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 12 }}>
                   No tasks scheduled for today
                 </Text>
               </View>
