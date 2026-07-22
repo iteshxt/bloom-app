@@ -606,7 +606,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
         <View style={{ ...cardStyle, backgroundColor: theme.backgroundSecondary, position: "relative", overflow: "hidden" }}>
           {/* Card background watermark */}
           <View style={{ position: "absolute", right: -15, bottom: -15, opacity: 0.08 }} pointerEvents="none">
-            <Ionicons name={theme.watermarkIcon as any} size={110} color={theme.primary} />
+            <Ionicons name="flower" size={110} color={theme.primary} />
           </View>
 
           <Text 
