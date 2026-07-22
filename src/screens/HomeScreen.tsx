@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { 
   View, 
   Text, 
@@ -11,10 +11,14 @@ import {
   Switch,
   Platform,
   Dimensions,
-  NativeModules
+  NativeModules,
+  Animated as AnimatedRN,
+  PanResponder,
+  StyleSheet
 } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
 import { useTasks, Task } from "../contexts/TasksContext";
+import { useToast } from "../contexts/ToastContext";
 import { Ionicons, Feather, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import Animated, { 
   useSharedValue, 
@@ -22,11 +26,17 @@ import Animated, {
   withTiming, 
   withDelay,
   withSequence,
-  runOnJS
+  runOnJS,
+  FadeIn,
+  FadeOut,
+  SlideInDown,
+  SlideOutDown
 } from "react-native-reanimated";
 
 interface HomeScreenProps {
   onNavigateToProfile: () => void;
+  onSwipeTask?: (swiping: boolean) => void;
+  onModalToggle?: (visible: boolean) => void;
 }
 
 // Floating Heart Object Interface
@@ -60,13 +70,263 @@ const CHEER_MESSAGES = {
   ]
 };
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile }) => {
+interface SwipeableTaskRowProps {
+  task: Task;
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
+  theme: any;
+  getFontFamily: (weight: "Regular" | "Medium" | "Bold") => string;
+  onSwipeTask?: (swiping: boolean) => void;
+}
+
+const getRecurrenceLabel = (days: string[]) => {
+  if (!days || days.length === 0) return "";
+  if (days.length === 7) return "WEEKLONG";
+  
+  const shortDays = days.map(d => {
+    switch (d.toLowerCase()) {
+      case "monday": return "MON";
+      case "tuesday": return "TUE";
+      case "wednesday": return "WED";
+      case "thursday": return "THU";
+      case "friday": return "FRI";
+      case "saturday": return "SAT";
+      case "sunday": return "SUN";
+      default: return "";
+    }
+  });
+  return shortDays.join(", ");
+};
+
+const SwipeableTaskRow: React.FC<SwipeableTaskRowProps> = ({ task, onToggle, onDelete, theme, getFontFamily, onSwipeTask }) => {
+  const translateX = useRef(new AnimatedRN.Value(0)).current;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dx) > 8 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
+      },
+      onPanResponderGrant: () => {
+        onSwipeTask?.(true);
+      },
+      onPanResponderMove: (_, gestureState) => {
+        let val = gestureState.dx;
+        if (val < 0) val = 0; // Disable left-side swipe entirely
+        translateX.setValue(val);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        onSwipeTask?.(false);
+        const screenWidth = Dimensions.get("window").width;
+        if (gestureState.dx > screenWidth * 0.45) {
+          // Swipe past 45% -> Animate card off-screen right and trigger delete
+          AnimatedRN.timing(translateX, {
+            toValue: screenWidth,
+            duration: 200,
+            useNativeDriver: true
+          }).start(() => {
+            onDelete(task.id);
+          });
+        } else {
+          // Snap closed
+          AnimatedRN.spring(translateX, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 40,
+            friction: 7
+          }).start();
+        }
+      },
+      onPanResponderTerminate: () => {
+        onSwipeTask?.(false);
+        AnimatedRN.spring(translateX, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 40,
+          friction: 7
+        }).start();
+      }
+    })
+  ).current;
+
+  useEffect(() => {
+    AnimatedRN.spring(translateX, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 40,
+      friction: 7
+    }).start();
+  }, [task.id]);
+
+  return (
+    <View 
+      style={{ 
+        position: "relative", 
+        marginBottom: 12, 
+        borderRadius: theme.borderRadiusCard,
+        overflow: "hidden"
+      }}
+    >
+      {/* Background Trash Panel (Full-width card, reveals on drag) */}
+      <TouchableOpacity
+        onPress={() => onDelete(task.id)}
+        style={{
+          position: "absolute",
+          top: 0,
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: "#EF4444",
+          paddingLeft: 24,
+          justifyContent: "center",
+          zIndex: 1
+        }}
+        activeOpacity={0.9}
+      >
+        <Ionicons name="trash-outline" size={22} color="#FFFFFF" />
+      </TouchableOpacity>
+
+      {/* Slideable Foreground Card */}
+      <AnimatedRN.View
+        style={{
+          transform: [{ translateX }],
+          backgroundColor: theme.cardBg,
+          borderRadius: theme.borderRadiusCard,
+          zIndex: 2,
+          shadowColor: theme.text,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.04,
+          shadowRadius: 10,
+          elevation: 2
+        }}
+        {...panResponder.panHandlers}
+      >
+        <TouchableOpacity
+          activeOpacity={0.855}
+          onPress={() => onToggle(task.id)}
+          className="p-5 flex-row items-center justify-between"
+        >
+          <View className="flex-row items-center flex-1 pr-4">
+            <View
+              style={{ backgroundColor: task.color }}
+              className="w-1.5 h-10 rounded-full mr-3.5"
+            />
+            
+            <View className="flex-1">
+              <View className="flex-row mb-1">
+                <View
+                  style={{ backgroundColor: `${task.color}15` }}
+                  className="px-2.5 py-0.5 rounded-full"
+                >
+                  <Text
+                    style={{ color: task.color, fontFamily: getFontFamily("Bold") }}
+                    className="text-[9px] uppercase"
+                  >
+                    {task.category}
+                  </Text>
+                </View>
+
+                {task.recurrenceDays && task.recurrenceDays.length > 0 && (
+                  <View style={{ backgroundColor: `${theme.primary}15` }} className="px-2 py-0.5 rounded-full ml-1.5 flex-row items-center">
+                    <Ionicons name="repeat" size={9} color={theme.primary} style={{ marginRight: 3 }} />
+                    <Text style={{ color: theme.primary, fontFamily: getFontFamily("Bold"), fontSize: 9 }}>
+                      {getRecurrenceLabel(task.recurrenceDays)}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              <Text
+                style={{
+                  color: theme.text,
+                  fontFamily: getFontFamily("Bold"),
+                  textDecorationLine: task.completed ? "line-through" : "none",
+                  opacity: task.completed ? 0.6 : 1
+                }}
+                className="text-base"
+              >
+                {task.name}
+              </Text>
+            </View>
+          </View>
+
+          <View
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 14,
+              borderWidth: 2,
+              borderColor: task.completed ? task.color : theme.border,
+              backgroundColor: task.completed ? task.color : "transparent",
+              alignItems: "center",
+              justifyContent: "center"
+            }}
+          >
+            {task.completed && (
+              <Ionicons name="checkmark" size={16} color={theme.primaryContrast} />
+            )}
+          </View>
+        </TouchableOpacity>
+      </AnimatedRN.View>
+    </View>
+  );
+};
+
+const FloatingHeartComponent = ({ heart, onComplete }: { heart: FloatingHeart, onComplete: (id: string) => void }) => {
+  const startY = Dimensions.get("window").height;
+  const endY = startY * 0.3;
+  const animY = useSharedValue(startY);
+  const animOpacity = useSharedValue(1);
+
+  useEffect(() => {
+    animY.value = withTiming(endY, { duration: 2500 });
+    animOpacity.value = withSequence(
+      withTiming(1, { duration: 1500 }),
+      withTiming(0, { duration: 1000 }, () => {
+        runOnJS(onComplete)(heart.id);
+      })
+    );
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: animY.value },
+      { translateX: heart.x }
+    ],
+    opacity: animOpacity.value
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        {
+          position: "absolute",
+          alignSelf: "center",
+          width: heart.size,
+          height: heart.size,
+          bottom: 0
+        },
+        animatedStyle
+      ]}
+    >
+      <Ionicons name="heart" size={heart.size} color={heart.color} />
+    </Animated.View>
+  );
+};
+
+export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onSwipeTask, onModalToggle }) => {
   const { theme, currentTheme, currentStreak } = useTheme();
-  const { tasks, addTask, toggleTask } = useTasks();
+  const { tasks, addTask, toggleTask, deleteTask } = useTasks();
+  const { showToast } = useToast();
 
   // Partner Active Status
   const [partnerStatus, setPartnerStatus] = useState<"Studying" | "On Break" | "Idle" | "Offline">("Studying");
-  const [notificationToast, setNotificationToast] = useState<string | null>(null);
+  const [isCheersModalVisible, setIsCheersModalVisible] = useState(false);
+  const [activeCheerType, setActiveCheerType] = useState<"Nudge" | "Heart" | "Coffee" | "Celebrate">("Nudge");
+  const handleDeleteTask = (id: string) => {
+    deleteTask(id);
+    showToast("Task deleted successfully.", "success");
+  };
 
   // Sync partner status to native widget when it changes
   useEffect(() => {
@@ -90,13 +350,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile }) =
 
   // Add Task Modal State
   const [isModalVisible, setIsModalVisible] = useState(false);
+
+  useEffect(() => {
+    if (onModalToggle) {
+      onModalToggle(isModalVisible || isCheersModalVisible);
+    }
+  }, [isModalVisible, isCheersModalVisible]);
   const [taskName, setTaskName] = useState("");
   const [taskCategory, setTaskCategory] = useState("");
-  const [isRecurring, setIsRecurring] = useState(true);
-
-  // Cheers Messages Modal State
-  const [isCheersModalVisible, setIsCheersModalVisible] = useState(false);
-  const [activeCheerType, setActiveCheerType] = useState<"Nudge" | "Heart" | "Coffee" | "Celebrate">("Nudge");
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
 
   // Reflections State
   const [reflectionText, setReflectionText] = useState("");
@@ -107,18 +370,39 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile }) =
   ]);
 
   // Suggested tags
-  const suggestedTags = ["LeetCode", "Fitness", "Growth", "Coding"];
+  const suggestedTags = useMemo(() => {
+    const uniqueTags = Array.from(new Set(tasks.map(t => t.category)));
+    const filtered = uniqueTags.filter(tag => tag && tag.trim() !== "" && tag.trim().toLowerCase() !== "custom");
+    if (filtered.length === 0) {
+      return ["LeetCode", "Fitness", "Growth", "Coding"];
+    }
+    return filtered;
+  }, [tasks]);
 
   // Mock focus data
-  const weeklyData = [
-    { day: "M", you: 3.5, sarah: 4.0 },
-    { day: "T", you: 4.2, sarah: 3.5 },
-    { day: "W", you: 5.0, sarah: 4.8 },
-    { day: "T", you: 3.8, sarah: 4.2 }, 
-    { day: "F", you: 4.5, sarah: 5.5 },
-    { day: "S", you: 2.0, sarah: 3.0 },
-    { day: "S", you: 1.5, sarah: 2.5 },
+  const [weekRange, setWeekRange] = useState<"This Week" | "Last Week">("This Week");
+
+  const thisWeekData = [
+    { day: "Mon", you: 3.5, sarah: 4.0 },
+    { day: "Tue", you: 4.2, sarah: 3.5 },
+    { day: "Wed", you: 5.0, sarah: 4.8 },
+    { day: "Thu", you: 3.8, sarah: 4.2 }, 
+    { day: "Fri", you: 4.5, sarah: 5.5 },
+    { day: "Sat", you: 2.0, sarah: 3.0 },
+    { day: "Sun", you: 1.5, sarah: 2.5 },
   ];
+
+  const lastWeekData = [
+    { day: "Mon", you: 2.8, sarah: 3.2 },
+    { day: "Tue", you: 3.5, sarah: 4.0 },
+    { day: "Wed", you: 4.2, sarah: 3.8 },
+    { day: "Thu", you: 4.0, sarah: 4.5 }, 
+    { day: "Fri", you: 3.8, sarah: 4.2 },
+    { day: "Sat", you: 1.8, sarah: 2.2 },
+    { day: "Sun", you: 2.2, sarah: 1.8 },
+  ];
+
+  const weeklyData = weekRange === "This Week" ? thisWeekData : lastWeekData;
   const maxWeeklyHours = 6;
 
   const completedCount = tasks.filter(t => t.completed).length;
@@ -149,19 +433,31 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile }) =
         ...prev
       ]);
       setReflectionText("");
-      Alert.alert("Reflections Saved!", "Your daily thought has been synced with your partner.");
+      showToast("Your daily thought has been synced with your partner.", "success");
     }, 1500);
+  };
+
+  const toggleDaySelection = (day: string) => {
+    setSelectedDays(prev => {
+      if (prev.includes(day)) {
+        return prev.filter(d => d !== day);
+      } else {
+        return [...prev, day];
+      }
+    });
   };
 
   const handleAddTaskSubmit = () => {
     if (taskName.trim() === "") {
-      Alert.alert("Error", "Please enter a task name.");
+      showToast("Please enter a task name.", "error");
       return;
     }
-    addTask(taskName, taskCategory, isRecurring);
+    const days = isRecurring ? selectedDays : [];
+    addTask(taskName, taskCategory, days);
     setTaskName("");
     setTaskCategory("");
-    setIsRecurring(true);
+    setIsRecurring(false);
+    setSelectedDays([]);
     setIsModalVisible(false);
   };
 
@@ -172,12 +468,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile }) =
       triggerHeartBurst();
     }
 
-    setNotificationToast(`Cheer sent to Sarah: "${msg}"`);
-    
-    // Auto-clear toast banner
-    setTimeout(() => {
-      setNotificationToast(null);
-    }, 4000);
+    showToast(`Cheer sent to Sarah: "${msg}"`, "success");
   };
 
   const getFontFamily = (weight: "Regular" | "Medium" | "Bold") => {
@@ -215,6 +506,33 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile }) =
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
+      {/* Background Watermark Leaves */}
+      <View style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0, overflow: "hidden" }} pointerEvents="none">
+        <Ionicons 
+          name="leaf" 
+          size={350} 
+          color={theme.primary} 
+          style={{ 
+            position: "absolute", 
+            left: -100, 
+            top: -50, 
+            opacity: 0.06, 
+            transform: [{ rotate: "-35deg" }] 
+          }} 
+        />
+        <Ionicons 
+          name="leaf" 
+          size={450} 
+          color={theme.primary} 
+          style={{ 
+            position: "absolute", 
+            right: -150, 
+            bottom: 50, 
+            opacity: 0.06, 
+            transform: [{ rotate: "45deg" }] 
+          }} 
+        />
+      </View>
       <ScrollView 
         contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 110, paddingTop: 16 }}
         showsVerticalScrollIndicator={false}
@@ -262,39 +580,30 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile }) =
           {/* Clean Premium Streak Badge */}
           <TouchableOpacity 
             onPress={onNavigateToProfile}
-            className="flex-row items-center"
-            style={{ paddingVertical: 4 }}
+            className="flex-row items-center justify-center rounded-2xl px-4 py-2"
+            style={{ backgroundColor: theme.backgroundSecondary }}
           >
-            <Text 
-              style={{ 
-                color: theme.text, 
-                fontFamily: getFontFamily("Bold"), 
-                fontSize: 20, 
-                lineHeight: 24,
-                marginRight: 4
-              }}
-            >
-              {currentStreak}
-            </Text>
-            <Ionicons name="flame" size={24} color="#FF6D00" />
+            <View className="items-center">
+              <View className="flex-row items-center">
+                <Ionicons name="flame" size={16} color={theme.primary} style={{ marginRight: 4 }} />
+                <Text 
+                  style={{ 
+                    color: theme.text, 
+                    fontFamily: getFontFamily("Bold"), 
+                    fontSize: 20, 
+                    lineHeight: 24,
+                  }}
+                >
+                  {currentStreak}
+                </Text>
+              </View>
+              <Text style={{ color: theme.primary, fontFamily: getFontFamily("Medium"), fontSize: 10 }}>Day Streak</Text>
+            </View>
           </TouchableOpacity>
         </View>
 
-        {/* Local Notification Banner */}
-        {notificationToast && (
-          <View 
-            style={{ backgroundColor: theme.primary, borderRadius: theme.borderRadiusButton }}
-            className="p-3.5 mb-4 flex-row items-center shadow"
-          >
-            <Ionicons name="information-circle" size={20} color={theme.primaryContrast} style={{ marginRight: 8 }} />
-            <Text style={{ color: theme.primaryContrast, fontFamily: getFontFamily("Medium"), fontSize: 12, flex: 1 }}>
-              {notificationToast}
-            </Text>
-          </View>
-        )}
-
         {/* Dedicated Partner Card (Sarah's active stats) */}
-        <View style={cardStyle}>
+        <View style={{ ...cardStyle, backgroundColor: theme.backgroundSecondary }}>
           <Text 
             style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium") }} 
             className="text-xs uppercase tracking-wider mb-3"
@@ -340,28 +649,29 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile }) =
                 const nextIdx = (statuses.indexOf(partnerStatus) + 1) % statuses.length;
                 setPartnerStatus(statuses[nextIdx]);
               }}
-              style={{ backgroundColor: theme.backgroundSecondary, ...buttonStyle }}
-              className="px-3 py-1 rounded-full"
+              style={{ backgroundColor: "#FDF8E7", borderWidth: 1, borderColor: "rgba(172, 99, 138, 0.15)", borderRadius: 999 }}
+              className="px-3.5 py-1.5 flex-row items-center"
             >
-              <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 10 }}>
+              <Text style={{ color: theme.primary, fontFamily: getFontFamily("Bold"), fontSize: 11, marginRight: 4 }}>
                 Status Check
               </Text>
+              <Feather name="chevron-right" size={12} color={theme.primary} />
             </TouchableOpacity>
           </View>
 
           {/* Active status panel */}
           {partnerStatus === "Studying" && (
             <View 
-              style={{ backgroundColor: `${theme.accent}12` }} 
-              className="rounded-2xl p-3 mb-4 flex-row items-center justify-between"
+              style={{ backgroundColor: "#FFF8E5", borderWidth: 1, borderColor: "rgba(131, 64, 99, 0.12)" }} 
+              className="rounded-2xl p-4 mb-4 flex-row items-center justify-between"
             >
-              <View className="flex-row items-center">
-                <Ionicons name="book-outline" size={16} color={theme.accent} style={{ marginRight: 6 }} />
-                <Text style={{ color: theme.accent, fontFamily: getFontFamily("Medium"), fontSize: 11 }}>
+              <View className="flex-row items-center" style={{ flex: 1, marginRight: 12 }}>
+                <Ionicons name="book" size={18} color={theme.primary} style={{ marginRight: 8 }} />
+                <Text style={{ flex: 1, color: theme.primary, fontFamily: getFontFamily("Medium"), fontSize: 13 }} numberOfLines={1} ellipsizeMode="tail">
                   Sarah is studying Graph Algorithms
                 </Text>
               </View>
-              <Text style={{ color: theme.accent, fontFamily: getFontFamily("Bold"), fontSize: 11 }}>
+              <Text style={{ color: theme.primary, fontFamily: getFontFamily("Bold"), fontSize: 13 }} className="shrink-0">
                 24m Left
               </Text>
             </View>
@@ -384,89 +694,81 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile }) =
             </View>
           )}
 
-          {/* Cheers & Nudge Row (NO emojis - Clean Vector Icons!) */}
-          <View style={{ borderTopWidth: 1, borderTopColor: theme.border, paddingTop: 16 }}>
-            <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Bold"), fontSize: 11, marginBottom: 8 }}>
+          {/* Cheers & Nudge Row */}
+          <View style={{ borderTopWidth: 1, borderTopColor: "rgba(172, 99, 138, 0.1)", paddingTop: 16 }}>
+            <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Bold"), fontSize: 11, marginBottom: 12 }}>
               Send Co-working Cheer
             </Text>
             
             <View className="flex-row justify-between">
               {/* Nudge Trigger */}
               <TouchableOpacity 
-                onPress={() => {
-                  setActiveCheerType("Nudge");
-                  setIsCheersModalVisible(true);
-                }}
-                style={{ backgroundColor: theme.background, borderColor: theme.border, borderWidth: theme.borderWidth }}
-                className="w-11 h-11 rounded-full items-center justify-center"
+                onPress={() => showToast(`Sent a Nudge to Sarah!`, "success")}
+                style={{ backgroundColor: "#F3E6EE" }}
+                className="flex-row items-center px-4 py-3 rounded-2xl flex-1 mr-2 justify-center"
               >
-                <Ionicons name="notifications-outline" size={18} color={theme.text} />
+                <Ionicons name="leaf" size={16} color={theme.accent} style={{ marginRight: 6 }} />
+                <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 12 }}>Nudge</Text>
               </TouchableOpacity>
 
               {/* Heart Trigger */}
               <TouchableOpacity 
                 onPress={() => {
-                  setActiveCheerType("Heart");
-                  setIsCheersModalVisible(true);
+                  triggerHeartBurst();
+                  showToast(`Sent a Heart to Sarah!`, "success");
                 }}
-                style={{ backgroundColor: theme.background, borderColor: theme.border, borderWidth: theme.borderWidth }}
-                className="w-11 h-11 rounded-full items-center justify-center"
+                style={{ backgroundColor: "#FCF5E2" }}
+                className="flex-row items-center px-4 py-3 rounded-2xl flex-1 mx-2 justify-center"
               >
-                <Ionicons name="heart-outline" size={18} color="#EF4444" />
+                <Ionicons name="heart" size={16} color={theme.primary} style={{ marginRight: 6 }} />
+                <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 12 }}>Heart</Text>
               </TouchableOpacity>
 
               {/* Coffee Trigger */}
               <TouchableOpacity 
-                onPress={() => {
-                  setActiveCheerType("Coffee");
-                  setIsCheersModalVisible(true);
-                }}
-                style={{ backgroundColor: theme.background, borderColor: theme.border, borderWidth: theme.borderWidth }}
-                className="w-11 h-11 rounded-full items-center justify-center"
+                onPress={() => showToast(`Sent a Coffee to Sarah!`, "success")}
+                style={{ backgroundColor: "#EFE6F5" }}
+                className="flex-row items-center px-4 py-3 rounded-2xl flex-1 ml-2 justify-center"
               >
-                <Ionicons name="cafe-outline" size={18} color={theme.primary} />
-              </TouchableOpacity>
-
-              {/* Celebrate Trigger */}
-              <TouchableOpacity 
-                onPress={() => {
-                  setActiveCheerType("Celebrate");
-                  setIsCheersModalVisible(true);
-                }}
-                style={{ backgroundColor: theme.background, borderColor: theme.border, borderWidth: theme.borderWidth }}
-                className="w-11 h-11 rounded-full items-center justify-center"
-              >
-                <Ionicons name="sparkles-outline" size={18} color="#D99B26" />
+                <Ionicons name="cafe" size={16} color={theme.primary} style={{ marginRight: 6 }} />
+                <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 12 }}>Coffee</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
 
-        {/* Today's Tasks List Section */}
-        <View className="mb-6">
-          <View className="flex-row items-center justify-between mb-4 px-2">
-            <View>
-              <Text 
-                style={{ color: theme.text, fontFamily: getFontFamily("Bold") }} 
-                className="text-xl"
-              >
-                Today's Tasks
-              </Text>
-              <Text 
-                style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium") }} 
-                className="text-xs"
-              >
-                {completedCount} of {tasks.length} completed
-              </Text>
-            </View>
+          {/* Today's Tasks List Section */}
+          <View className="mb-6">
+            <View className="flex-row items-center justify-between mb-4">
+              <View>
+                <View className="flex-row items-center">
+                  <Text 
+                    style={{ color: theme.text, fontFamily: getFontFamily("Bold") }} 
+                    className="text-xl"
+                  >
+                    Today's Tasks
+                  </Text>
+                  <Ionicons name="leaf" size={18} color={theme.accent} style={{ marginLeft: 6, opacity: 0.8 }} />
+                </View>
+                <Text 
+                  style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium") }} 
+                  className="text-xs mt-1"
+                >
+                  {tasks.length > 0 ? `${completedCount} of ${tasks.length} completed` : "No tasks pending"}
+                </Text>
+              </View>
 
-            <TouchableOpacity 
-              style={{ borderColor: theme.border, borderWidth: theme.borderWidth, borderRadius: theme.borderRadiusButton }}
-              className="flex-row items-center bg-white px-3 py-1.5"
-              onPress={() => setIsModalVisible(true)}
-            >
-              <Ionicons name="add" size={16} color={theme.text} className="mr-0.5" />
-              <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold") }} className="text-xs">
+              <TouchableOpacity 
+                style={{ 
+                  backgroundColor: theme.primary, 
+                  borderRadius: 999,
+                  flexShrink: 0
+                }}
+                className="flex-row items-center px-5 py-2.5"
+                onPress={() => setIsModalVisible(true)}
+              >
+              <Ionicons name="add" size={16} color={theme.primaryContrast} style={{ marginRight: 4 }} />
+              <Text style={{ color: theme.primaryContrast, fontFamily: getFontFamily("Medium") }} className="text-xs shrink-0" numberOfLines={1}>
                 Add Task
               </Text>
             </TouchableOpacity>
@@ -474,161 +776,189 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile }) =
 
           {/* Dynamic Task List from Context */}
           <View>
-            {tasks.map((task) => (
-              <TouchableOpacity
-                key={task.id}
-                activeOpacity={0.8}
-                onPress={() => toggleTask(task.id)}
+            {tasks.length > 0 ? (
+              tasks.map((task) => (
+                <SwipeableTaskRow
+                  key={task.id}
+                  task={task}
+                  onToggle={toggleTask}
+                  onDelete={handleDeleteTask}
+                  theme={theme}
+                  getFontFamily={getFontFamily}
+                  onSwipeTask={onSwipeTask}
+                />
+              ))
+            ) : (
+              <View 
                 style={{ 
+                  padding: 32, 
+                  alignItems: 'center', 
                   backgroundColor: theme.cardBg, 
-                  borderColor: theme.border, 
-                  borderWidth: theme.borderWidth,
-                  borderRadius: theme.borderRadiusCard,
+                  borderRadius: theme.borderRadiusCard, 
+                  borderWidth: theme.borderWidth, 
+                  borderColor: theme.border,
+                  borderStyle: 'dashed'
                 }}
-                className="p-5 mb-3 flex-row items-center justify-between"
               >
-                <View className="flex-row items-center flex-1 pr-4">
-                  {/* Left decorative color bar */}
-                  <View 
-                    style={{ backgroundColor: task.color }} 
-                    className="w-1.5 h-10 rounded-full mr-3.5"
-                  />
-                  
-                  <View className="flex-1">
-                    <View className="flex-row mb-1">
-                      <View 
-                        style={{ backgroundColor: `${task.color}15` }} 
-                        className="px-2.5 py-0.5 rounded-full"
-                      >
-                        <Text 
-                          style={{ color: task.color, fontFamily: getFontFamily("Bold") }} 
-                          className="text-[9px] uppercase"
-                        >
-                          {task.category}
-                        </Text>
-                      </View>
-
-                      {task.isRecurring && (
-                        <View style={{ backgroundColor: `${theme.primary}15` }} className="px-2 py-0.5 rounded-full ml-1.5 flex-row items-center">
-                          <Ionicons name="repeat" size={9} color={theme.primary} style={{ marginRight: 3 }} />
-                          <Text style={{ color: theme.primary, fontFamily: getFontFamily("Bold"), fontSize: 9 }}>RECURRING</Text>
-                        </View>
-                      )}
-                    </View>
-
-                    <Text 
-                      style={{ 
-                        color: theme.text, 
-                        fontFamily: getFontFamily("Bold"),
-                        textDecorationLine: task.completed ? "line-through" : "none",
-                        opacity: task.completed ? 0.6 : 1
-                      }} 
-                      className="text-base"
-                    >
-                      {task.name}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Checkbox Trigger */}
-                <View 
-                  style={{ 
-                    width: 28, 
-                    height: 28, 
-                    borderRadius: 14, 
-                    borderWidth: 2, 
-                    borderColor: task.completed ? task.color : theme.border,
-                    backgroundColor: task.completed ? task.color : "transparent",
-                    justifyContent: "center",
-                    alignItems: "center"
-                  }}
-                >
-                  {task.completed && (
-                    <Ionicons name="checkmark" size={16} color={theme.primaryContrast} />
-                  )}
-                </View>
-              </TouchableOpacity>
-            ))}
+                <Ionicons name="leaf-outline" size={32} color={theme.textSecondary} style={{ marginBottom: 12 }} />
+                <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 14, marginBottom: 4 }}>
+                  Your garden is clear!
+                </Text>
+                <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 12, textAlign: 'center' }}>
+                  Click the + Add button to plant a new task for today.
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
         {/* Refined Weekly Activity Bar Graph - Side-by-side hours comparisons */}
-        <View style={cardStyle}>
-          <Text 
-            style={{ color: theme.text, fontFamily: getFontFamily("Bold") }} 
-            className="text-base mb-1"
-          >
-            Weekly Activity
-          </Text>
-          <Text 
-            style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular") }} 
-            className="text-xs mb-6"
-          >
-            Aggregated focus hours logged by you and Sarah.
-          </Text>
+        <View style={[cardStyle, { position: "relative", overflow: "hidden" }]}>
+          <View className="flex-row items-center justify-between mb-3">
+            <View>
+              <Text 
+                style={{ color: theme.text, fontFamily: getFontFamily("Bold") }} 
+                className="text-xl"
+              >
+                Weekly Activity
+              </Text>
+              <Text 
+                style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular") }} 
+                className="text-xs"
+              >
+                Focus hours logged by you and Sarah
+              </Text>
+            </View>
+            <TouchableOpacity 
+              onPress={() => setWeekRange(prev => prev === "This Week" ? "Last Week" : "This Week")}
+              style={{ borderColor: "rgba(131, 64, 99, 0.2)", borderWidth: 1, borderRadius: 20 }}
+              className="px-3.5 py-1.5 flex-row items-center bg-white"
+            >
+              <Text style={{ color: theme.text, fontFamily: getFontFamily("Medium"), fontSize: 10, marginRight: 4 }}>{weekRange}</Text>
+              <Ionicons name="chevron-down" size={12} color={theme.text} />
+            </TouchableOpacity>
+          </View>
 
-          {/* Bar Chart Representation */}
-          <View style={{ height: 140, paddingHorizontal: 4 }} className="flex-row items-end justify-between px-1 mb-3">
-            {weeklyData.map((item, idx) => {
-              const myHeight = `${(item.you / maxWeeklyHours) * 100}%`;
-              const sarahHeight = `${(item.sarah / maxWeeklyHours) * 100}%`;
+          {/* Leaf Decoration Graphic on Right Edge - Set to watermark style to not block graph */}
+          <View style={{ position: "absolute", right: -25, top: 40, opacity: 0.18, zIndex: 1 }} pointerEvents="none">
+            <Ionicons name="leaf" size={100} color={theme.accent} style={{ transform: [{ rotate: "25deg" }] }} />
+          </View>
 
-              return (
-                <View key={idx} className="items-center flex-1 h-full justify-end" style={{ paddingHorizontal: 2 }}>
-                  {/* Hours Values Labels */}
-                  <View className="items-center mb-1">
-                    <Text style={{ fontSize: 7, color: theme.textSecondary, fontFamily: getFontFamily("Bold") }}>
-                      {item.you}h / {item.sarah}h
+          {/* Bar Chart Representation with Y-axis labels and gridlines */}
+          <View className="flex-row items-stretch" style={{ height: 160, zIndex: 5, marginTop: 12 }}>
+            {/* Y-Axis Labels */}
+            <View className="justify-between items-end pr-3 pb-8" style={{ height: "100%", width: 28 }}>
+              <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: getFontFamily("Medium") }}>6h</Text>
+              <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: getFontFamily("Medium") }}>4h</Text>
+              <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: getFontFamily("Medium") }}>2h</Text>
+              <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: getFontFamily("Medium") }}>0h</Text>
+            </View>
+
+            {/* Chart Area with Gridlines */}
+            <View className="flex-1 relative justify-end">
+              {/* Horizontal Gridlines */}
+              <View style={{ position: "absolute", left: 0, right: 0, top: 4, bottom: 32, justifyContent: "space-between" }}>
+                <View style={{ height: 1, backgroundColor: "rgba(172, 99, 138, 0.08)" }} />
+                <View style={{ height: 1, backgroundColor: "rgba(172, 99, 138, 0.08)" }} />
+                <View style={{ height: 1, backgroundColor: "rgba(172, 99, 138, 0.08)" }} />
+                <View style={{ height: 1, backgroundColor: "rgba(172, 99, 138, 0.08)" }} />
+              </View>
+
+              {/* Bars Row */}
+              <View className="flex-row items-end justify-between h-full pb-8">
+                {weeklyData.map((item, idx) => {
+                  const myHeight = `${(item.you / maxWeeklyHours) * 100}%`;
+                  const sarahHeight = `${(item.sarah / maxWeeklyHours) * 100}%`;
+
+                  return (
+                    <View key={idx} className="items-center flex-1 h-full justify-end" style={{ paddingHorizontal: 2 }}>
+                      <View style={{ height: "82%", alignItems: "flex-end", flexDirection: "row", width: "100%", justifyContent: "center" }}>
+                        {/* You (Plum) */}
+                        <View 
+                          style={{ 
+                            height: myHeight as any, 
+                            backgroundColor: theme.primary,
+                            width: 10,
+                            borderTopLeftRadius: 4,
+                            borderTopRightRadius: 4,
+                            marginRight: 1.5
+                          }} 
+                        />
+                        
+                        {/* Sarah (Cream) */}
+                        <View 
+                          style={{ 
+                            height: sarahHeight as any, 
+                            backgroundColor: theme.backgroundSecondary,
+                            width: 10,
+                            borderTopLeftRadius: 4,
+                            borderTopRightRadius: 4,
+                            marginLeft: 1.5
+                          }} 
+                        />
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+
+              {/* Day Labels Row */}
+              <View style={{ position: "absolute", left: 0, right: 0, bottom: 4, height: 20, flexDirection: "row", justifyContent: "space-between" }}>
+                {weeklyData.map((item, idx) => (
+                  <View key={idx} className="flex-1 items-center">
+                    <Text 
+                      style={{ 
+                        color: theme.textSecondary, 
+                        fontFamily: getFontFamily("Medium"),
+                        fontSize: 10
+                      }}
+                    >
+                      {item.day === "Mon" ? "Mon" : item.day === "Tue" ? "Tue" : item.day === "Wed" ? "Wed" : item.day === "Thu" ? "Thu" : item.day === "Fri" ? "Fri" : item.day === "Sat" ? "Sat" : "Sun"}
                     </Text>
                   </View>
+                ))}
+              </View>
+            </View>
+          </View>
 
-                  <View style={{ backgroundColor: theme.backgroundSecondary, padding: 3, borderRadius: 8, height: "72%", alignItems: "flex-end", flexDirection: "row", width: "100%", justifyContent: "center" }}>
-                    {/* You (Lavender) */}
-                    <View 
-                      style={{ 
-                        height: myHeight as any, 
-                        backgroundColor: theme.primary,
-                        flex: 1,
-                        borderTopLeftRadius: 4,
-                        borderTopRightRadius: 4,
-                        marginRight: 1
-                      }} 
-                    />
-                    
-                    {/* Sarah (Sage Green) */}
-                    <View 
-                      style={{ 
-                        height: sarahHeight as any, 
-                        backgroundColor: theme.accent,
-                        flex: 1,
-                        borderTopLeftRadius: 4,
-                        borderTopRightRadius: 4,
-                        marginLeft: 1
-                      }} 
-                    />
-                  </View>
-                  
-                  {/* Day Label */}
-                  <Text 
-                    style={{ 
-                      color: item.day === "T" ? theme.text : theme.textSecondary, 
-                      fontFamily: item.day === "T" ? getFontFamily("Bold") : getFontFamily("Medium") 
-                    }} 
-                    className="text-[10px] mt-2"
-                  >
-                    {item.day}
-                  </Text>
-                </View>
-              );
-            })}
+          {/* Legend Row */}
+          <View className="flex-row justify-center items-center mb-6 mt-1" style={{ zIndex: 5 }}>
+            <View className="flex-row items-center mr-6">
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.primary, marginRight: 6 }} />
+              <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 11 }}>You</Text>
+            </View>
+            <View className="flex-row items-center">
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.backgroundSecondary, marginRight: 6 }} />
+              <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 11 }}>Sarah</Text>
+            </View>
           </View>
 
           {/* Summary Insights footer */}
-          <View style={{ borderTopWidth: 1, borderTopColor: theme.border, paddingTop: 12 }} className="flex-row items-center">
-            <Ionicons name="information-circle-outline" size={16} color={theme.textSecondary} style={{ marginRight: 6 }} />
-            <Text style={{ color: theme.text, fontFamily: getFontFamily("Medium"), fontSize: 11, flex: 1, lineHeight: 16 }}>
-              Weekly Focus Total: You focused 22.3h • Sarah focused 25.1h. Great job staying in sync!
-            </Text>
+          <View style={{ borderTopWidth: 1, borderTopColor: theme.border, paddingTop: 16 }}>
+            <View className="flex-row justify-between items-center mb-4 px-2">
+              <View>
+                <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 11, marginBottom: 2 }}>You Focused</Text>
+                <Text style={{ color: theme.primary, fontFamily: getFontFamily("Bold"), fontSize: 18 }}>22.3h</Text>
+              </View>
+              
+              <View className="items-center justify-center">
+                <View style={{ backgroundColor: `${theme.accent}20`, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+                  <Text style={{ color: theme.accent, fontFamily: getFontFamily("Bold"), fontSize: 10 }}>SYNCED</Text>
+                </View>
+              </View>
+
+              <View className="items-end">
+                <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 11, marginBottom: 2 }}>Sarah Focused</Text>
+                <Text style={{ color: theme.accent, fontFamily: getFontFamily("Bold"), fontSize: 18 }}>25.1h</Text>
+              </View>
+            </View>
+
+            <View style={{ backgroundColor: theme.backgroundSecondary, padding: 12, borderRadius: 12, flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="sparkles" size={16} color="#D99B26" style={{ marginRight: 10 }} />
+              <Text style={{ color: theme.text, fontFamily: getFontFamily("Medium"), fontSize: 11, flex: 1, lineHeight: 16 }}>
+                Great job! You and Sarah are highly synchronized this week! Keep the momentum going.
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -636,7 +966,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile }) =
         <View style={cardStyle}>
           <Text 
             style={{ color: theme.text, fontFamily: getFontFamily("Bold") }} 
-            className="text-base mb-1"
+            className="text-xl mb-3"
           >
             Daily Reflection
           </Text>
@@ -740,101 +1070,33 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile }) =
           zIndex: 9999 
         }}
       >
-        {floatingHearts.map((heart) => {
-          // Trigger floating hearts effect on mount
-          const startY = Dimensions.get("window").height;
-          const endY = startY * 0.3;
-          const animY = useSharedValue(startY);
-          const animOpacity = useSharedValue(1);
-
-          useEffect(() => {
-            animY.value = withTiming(endY, { duration: 2500 });
-            animOpacity.value = withSequence(
-              withTiming(1, { duration: 1500 }),
-              withTiming(0, { duration: 1000 }, () => {
-                // Remove heart from state when animation completes
-                runOnJS(setFloatingHearts)(prev => prev.filter(h => h.id !== heart.id));
-              })
-            );
-          }, []);
-
-          const animatedStyle = useAnimatedStyle(() => ({
-            transform: [
-              { translateY: animY.value },
-              { translateX: heart.x }
-            ],
-            opacity: animOpacity.value
-          }));
-
-          return (
-            <Animated.View
-              key={heart.id}
-              style={[
-                {
-                  position: "absolute",
-                  alignSelf: "center",
-                  width: heart.size,
-                  height: heart.size,
-                  bottom: 0
-                },
-                animatedStyle
-              ]}
-            >
-              <Ionicons name="heart" size={heart.size} color={heart.color} />
-            </Animated.View>
-          );
-        })}
+        {floatingHearts.map((heart) => (
+          <FloatingHeartComponent
+            key={heart.id}
+            heart={heart}
+            onComplete={(id) => {
+              setFloatingHearts(prev => prev.filter(h => h.id !== id));
+            }}
+          />
+        ))}
       </View>
 
-      {/* Cheers pre-written message modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={isCheersModalVisible}
-        onRequestClose={() => setIsCheersModalVisible(false)}
-      >
-        <View style={{ flex: 1, backgroundColor: "rgba(0, 0, 0, 0.4)", justifyContent: "center", padding: 24 }}>
-          <View style={{ backgroundColor: theme.cardBg, borderRadius: theme.borderRadiusCard, borderWidth: theme.borderWidth, borderColor: theme.border, padding: 24 }}>
-            <View className="flex-row items-center justify-between mb-5">
-              <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 16 }}>
-                Send {activeCheerType} Cheer
-              </Text>
-              <TouchableOpacity onPress={() => setIsCheersModalVisible(false)}>
-                <Ionicons name="close-circle" size={24} color={theme.textSecondary} />
-              </TouchableOpacity>
-            </View>
 
-            <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular"), fontSize: 12, marginBottom: 16 }}>
-              Select a heartwarming message to send to Sarah:
-            </Text>
 
-            {/* Render List of prewritten Messages */}
-            {CHEER_MESSAGES[activeCheerType].map((msg, idx) => (
-              <TouchableOpacity
-                key={idx}
-                onPress={() => handleSendCheerMessage(msg)}
-                style={{ backgroundColor: theme.background, borderColor: theme.border, borderWidth: theme.borderWidth, borderRadius: theme.borderRadiusButton }}
-                className="p-4 mb-3 flex-row items-center justify-between"
-              >
-                <Text style={{ color: theme.text, fontFamily: getFontFamily("Medium"), fontSize: 13, flex: 1, marginRight: 8 }}>
-                  {msg}
-                </Text>
-                <Ionicons name="chevron-forward" size={14} color={theme.textSecondary} />
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      </Modal>
-
-      {/* Add Task Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={isModalVisible}
-        onRequestClose={() => setIsModalVisible(false)}
-      >
-        <View style={{ flex: 1, backgroundColor: "rgba(0, 0, 0, 0.4)", justifyContent: "center", padding: 24 }}>
-          <View style={{ backgroundColor: theme.cardBg, borderRadius: theme.borderRadiusCard, borderWidth: theme.borderWidth, borderColor: theme.border, padding: 24 }}>
+      {isModalVisible && (
+        <View style={[StyleSheet.absoluteFill, { zIndex: 99999, justifyContent: "flex-end" }]}>
+          {/* Translucent Backdrop */}
+          <Animated.View 
+            entering={FadeIn.duration(200)}
+            exiting={FadeOut.duration(200)}
+            style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0, 0, 0, 0.4)" }]}
+          />
+          {/* Modal Container */}
+          <Animated.View 
+            entering={SlideInDown.duration(250)}
+            exiting={SlideOutDown.duration(200)}
+            style={{ backgroundColor: theme.cardBg, borderTopLeftRadius: theme.borderRadiusCard, borderTopRightRadius: theme.borderRadiusCard, borderWidth: theme.borderWidth, borderColor: theme.border, padding: 24, paddingBottom: 40 }}
+          >
             <View className="flex-row items-center justify-between mb-5">
               <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 18 }}>
                 Add New Task
@@ -895,7 +1157,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile }) =
                   key={tag}
                   onPress={() => setTaskCategory(tag)}
                   style={{
-                    backgroundColor: taskCategory === tag ? theme.primary : theme.backgroundSecondary,
+                    backgroundColor: taskCategory === tag ? theme.text : theme.backgroundSecondary,
                     borderRadius: theme.borderRadiusButton,
                     paddingHorizontal: 10,
                     paddingVertical: 5,
@@ -916,23 +1178,68 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile }) =
               ))}
             </View>
 
-            {/* Field: Recurring Check */}
-            <View className="flex-row items-center justify-between mb-6">
+            {/* Field: Recurring Toggle */}
+            <View className="flex-row items-center justify-between mb-4">
               <View>
                 <Text style={{ color: theme.text, fontFamily: getFontFamily("Medium"), fontSize: 13 }}>
-                  Daily Recurring Habit
+                  Recurring Habit
                 </Text>
                 <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular"), fontSize: 10 }}>
-                  Shows contribution heatmap in Insights
+                  Repeat this task on selected days
                 </Text>
               </View>
               <Switch
                 value={isRecurring}
-                onValueChange={setIsRecurring}
-                trackColor={{ false: theme.border, true: theme.primary }}
+                onValueChange={(val) => {
+                  setIsRecurring(val);
+                  if (val) {
+                    setSelectedDays(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]);
+                  } else {
+                    setSelectedDays([]);
+                  }
+                }}
+                trackColor={{ false: theme.border, true: theme.text }}
                 thumbColor={Platform.OS === "android" ? "#ffffff" : undefined}
               />
             </View>
+
+            {/* Days Selector */}
+            {isRecurring && (
+              <View className="mb-6">
+                <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 11, marginBottom: 8 }}>
+                  Repeat On:
+                </Text>
+                <View className="flex-row justify-between">
+                  {(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const).map(day => {
+                    const isSelected = selectedDays.includes(day);
+                    return (
+                      <TouchableOpacity
+                        key={day}
+                        onPress={() => toggleDaySelection(day)}
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 16,
+                          backgroundColor: isSelected ? theme.text : theme.backgroundSecondary,
+                          borderWidth: isSelected ? 0 : theme.borderWidth,
+                          borderColor: theme.border,
+                          alignItems: "center",
+                          justifyContent: "center"
+                        }}
+                      >
+                        <Text style={{
+                          color: isSelected ? theme.primaryContrast : theme.text,
+                          fontFamily: getFontFamily("Bold"),
+                          fontSize: 10
+                        }}>
+                          {day.substring(0, 1).toUpperCase()}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
 
             {/* Add Submit Button */}
             <TouchableOpacity
@@ -944,9 +1251,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile }) =
                 Create Task
               </Text>
             </TouchableOpacity>
-          </View>
+          </Animated.View>
         </View>
-      </Modal>
+      )}
     </View>
   );
 };
