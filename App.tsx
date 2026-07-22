@@ -77,6 +77,16 @@ const originalTextRender = (Text as any).render;
 
 function AppContent() {
   const { theme, isThemeLoading } = useTheme();
+  
+  const [fontsLoaded] = useFonts({
+    Outfit_400Regular,
+    Outfit_500Medium,
+    Outfit_600SemiBold,
+    Outfit_700Bold,
+  });
+
+  const isAppLoading = isThemeLoading || !fontsLoaded;
+
   const [activeTab, setActiveTab] = useState<TabSlug>("home");
   const [showProfile, setShowProfile] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -105,8 +115,8 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    if (!isThemeLoading) {
-      // 2. Once theme has loaded, wait 800ms for user to enjoy animation, then fade out the entire splash screen
+    if (!isAppLoading) {
+      // 2. Once both fonts and theme have loaded, wait 800ms for user to enjoy animation, then fade out the entire splash screen
       setTimeout(() => {
         Animated.timing(fadeAnim, {
           toValue: 0,
@@ -117,7 +127,7 @@ function AppContent() {
         });
       }, 800);
     }
-  }, [isThemeLoading]);
+  }, [isAppLoading]);
 
   // Use refs to avoid stale closures in PanResponder callbacks
   const activeTabRef = useRef(activeTab);
@@ -252,24 +262,6 @@ function AppContent() {
 }
 
 export default function App() {
-  const [fontsLoaded] = useFonts({
-    Outfit_400Regular,
-    Outfit_500Medium,
-    Outfit_600SemiBold,
-    Outfit_700Bold,
-  });
-
-  if (!fontsLoaded) {
-    return (
-      <View className="flex-1 justify-center items-center bg-[#FBFBFD]">
-        <ActivityIndicator size="large" color="#8C7AB8" />
-        <Text style={{ fontSize: 16, color: "#8C7AB8", fontFamily: "sans-serif", marginTop: 12 }}>
-          Growing Bloom...
-        </Text>
-      </View>
-    );
-  }
-
   return (
     <SafeAreaProvider>
       <ThemeProvider>
