@@ -23,6 +23,7 @@ export interface ColorPalette {
   fontFamilyRegular: string;
   fontFamilyMedium: string;
   fontFamilyBold: string;
+  watermarkIcon: string;
 }
 
 export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors: ColorPalette }> = {
@@ -48,6 +49,7 @@ export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors
       fontFamilyRegular: "Outfit_400Regular",
       fontFamilyMedium: "Outfit_500Medium",
       fontFamilyBold: Platform.OS === "ios" ? "Georgia-Bold" : "serif",
+      watermarkIcon: "flower",
     },
   },
   sakura: {
@@ -72,6 +74,7 @@ export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors
       fontFamilyRegular: "Outfit_400Regular",
       fontFamilyMedium: "Outfit_500Medium",
       fontFamilyBold: Platform.OS === "ios" ? "Georgia-Bold" : "serif",
+      watermarkIcon: "rose",
     },
   },
   minimal: {
@@ -96,6 +99,7 @@ export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors
       fontFamilyRegular: "Outfit_400Regular",
       fontFamilyMedium: "Outfit_500Medium",
       fontFamilyBold: "Outfit_700Bold",
+      watermarkIcon: "heart",
     },
   },
   honey: {
@@ -120,6 +124,7 @@ export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors
       fontFamilyRegular: "Outfit_400Regular",
       fontFamilyMedium: "Outfit_500Medium",
       fontFamilyBold: "Outfit_700Bold",
+      watermarkIcon: "leaf",
     },
   },
   nordic: {
@@ -144,6 +149,7 @@ export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors
       fontFamilyRegular: "Outfit_400Regular",
       fontFamilyMedium: "Outfit_500Medium",
       fontFamilyBold: Platform.OS === "ios" ? "Georgia-Bold" : "serif",
+      watermarkIcon: "rose",
     },
   },
   retro: {
@@ -168,6 +174,7 @@ export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors
       fontFamilyRegular: "Outfit_400Regular",
       fontFamilyMedium: "Outfit_500Medium",
       fontFamilyBold: Platform.OS === "ios" ? "Georgia-Bold" : "serif",
+      watermarkIcon: "cloud",
     },
   },
   mario: {
@@ -192,6 +199,7 @@ export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors
       fontFamilyRegular: "Outfit_400Regular",
       fontFamilyMedium: "Outfit_500Medium",
       fontFamilyBold: "Outfit_700Bold",
+      watermarkIcon: "star",
     },
   },
 };
