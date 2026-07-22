@@ -604,9 +604,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
 
         {/* Dedicated Partner Card (Sarah's active stats) */}
         <View style={{ ...cardStyle, backgroundColor: theme.backgroundSecondary, position: "relative", overflow: "hidden" }}>
-          {/* Card background watermark */}
-          <View style={{ position: "absolute", right: -15, bottom: -15, opacity: 0.08 }} pointerEvents="none">
-            <Ionicons name="flower" size={110} color={theme.primary} />
+          {/* Flower Decoration Graphic on Right Edge - Set to watermark style to match weekly activity card */}
+          <View style={{ position: "absolute", right: -25, top: 35, opacity: 0.18, zIndex: 1 }} pointerEvents="none">
+            <Ionicons name="flower" size={105} color={theme.accent} style={{ transform: [{ rotate: "-15deg" }] }} />
           </View>
 
           <Text 
