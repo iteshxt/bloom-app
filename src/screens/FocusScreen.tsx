@@ -211,10 +211,10 @@ export const FocusScreen: React.FC<FocusScreenProps> = ({ onFullScreenToggle }) 
       style={{ flex: 1, backgroundColor: theme.background }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      {/* Background Watermark Leaves */}
+      {/* Background Watermark */}
       <View style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0, overflow: "hidden" }} pointerEvents="none">
         <Ionicons 
-          name="leaf" 
+          name={theme.watermarkIcon as any} 
           size={350} 
           color={theme.primary} 
           style={{ 
@@ -226,7 +226,7 @@ export const FocusScreen: React.FC<FocusScreenProps> = ({ onFullScreenToggle }) 
           }} 
         />
         <Ionicons 
-          name="leaf" 
+          name={theme.watermarkIcon as any} 
           size={450} 
           color={theme.primary} 
           style={{ 

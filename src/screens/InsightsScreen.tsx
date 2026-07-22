@@ -103,10 +103,10 @@ export const InsightsScreen: React.FC = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
-      {/* Background Watermark Leaves */}
+      {/* Background Watermark */}
       <View style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0, overflow: "hidden" }} pointerEvents="none">
         <Ionicons 
-          name="leaf" 
+          name={theme.watermarkIcon as any} 
           size={350} 
           color={theme.primary} 
           style={{ 
@@ -118,7 +118,7 @@ export const InsightsScreen: React.FC = () => {
           }} 
         />
         <Ionicons 
-          name="leaf" 
+          name={theme.watermarkIcon as any} 
           size={450} 
           color={theme.primary} 
           style={{ 

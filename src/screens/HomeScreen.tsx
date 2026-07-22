@@ -506,10 +506,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
-      {/* Background Watermark Leaves */}
+      {/* Background Watermark */}
       <View style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0, overflow: "hidden" }} pointerEvents="none">
         <Ionicons 
-          name="leaf" 
+          name={theme.watermarkIcon as any} 
           size={350} 
           color={theme.primary} 
           style={{ 
@@ -521,7 +521,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
           }} 
         />
         <Ionicons 
-          name="leaf" 
+          name={theme.watermarkIcon as any} 
           size={450} 
           color={theme.primary} 
           style={{ 
@@ -603,9 +603,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
         </View>
 
         {/* Dedicated Partner Card (Sarah's active stats) */}
-        <View style={{ ...cardStyle, backgroundColor: theme.backgroundSecondary }}>
+        <View style={{ ...cardStyle, backgroundColor: theme.backgroundSecondary, position: "relative", overflow: "hidden" }}>
+          {/* Card background watermark */}
+          <View style={{ position: "absolute", right: -15, bottom: -15, opacity: 0.08 }} pointerEvents="none">
+            <Ionicons name={theme.watermarkIcon as any} size={110} color={theme.primary} />
+          </View>
+
           <Text 
-            style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium") }} 
+            style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), zIndex: 1 }} 
             className="text-xs uppercase tracking-wider mb-3"
           >
             Sarah's Garden
