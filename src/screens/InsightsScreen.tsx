@@ -543,11 +543,13 @@ export const InsightsScreen: React.FC = () => {
                   backgroundColor: theme.cardBg, 
                   borderTopLeftRadius: theme.borderRadiusCard, 
                   borderTopRightRadius: theme.borderRadiusCard,
+                  borderBottomLeftRadius: 0,
+                  borderBottomRightRadius: 0,
                   borderWidth: theme.borderWidth,
                   borderColor: theme.border,
                   paddingHorizontal: 24,
                   paddingTop: 24,
-                  paddingBottom: Platform.OS === "ios" ? 40 : 24,
+                  paddingBottom: Platform.OS === "ios" ? 40 : 32,
                   maxHeight: "85%",
                 }}
               >
@@ -713,27 +715,6 @@ export const InsightsScreen: React.FC = () => {
                     </View>
                   </View>
                 </View>
-
-                {/* Close/Action Button */}
-                <TouchableOpacity
-                  onPress={() => setSelectedHabit(null)}
-                  style={{
-                    backgroundColor: theme.primary,
-                    borderRadius: theme.borderRadiusButton,
-                    paddingVertical: 14,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    shadowColor: theme.primary,
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: theme.shadowOpacity,
-                    shadowRadius: 8,
-                    elevation: theme.shadowOpacity > 0 ? 3 : 0
-                  }}
-                >
-                  <Text style={{ color: theme.primaryContrast, fontFamily: getFontFamily("Bold"), fontSize: 14 }}>
-                    Close Details
-                  </Text>
-                </TouchableOpacity>
 
               </Animated.View>
             </View>

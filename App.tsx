@@ -76,7 +76,7 @@ const originalTextRender = (Text as any).render;
 };
 
 function AppContent() {
-  const { theme, isThemeLoading } = useTheme();
+  const { theme, isThemeLoading, currentTheme } = useTheme();
   
   const [fontsLoaded] = useFonts({
     Outfit_400Regular,
@@ -191,7 +191,7 @@ function AppContent() {
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={["top"]}>
       <StatusBar style={theme.statusBar} />
       
-      <View style={{ flex: 1 }} {...panResponder.panHandlers}>
+      <View key={currentTheme} style={{ flex: 1 }} {...panResponder.panHandlers}>
         {renderScreen((swiping) => {
           isSwipingTaskRef.current = swiping;
         })}
