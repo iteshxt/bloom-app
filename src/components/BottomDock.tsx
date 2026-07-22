@@ -12,7 +12,7 @@ interface BottomDockProps {
 }
 
 export const BottomDock: React.FC<BottomDockProps> = ({ activeTab, onTabSelect }) => {
-  const { theme } = useTheme();
+  const { theme, currentTheme } = useTheme();
 
   const tabs: { slug: TabSlug; label: string; icon: string; provider: "ionicons" | "feather" | "mci" }[] = [
     { slug: "home", label: "Home", icon: "home", provider: "ionicons" },
@@ -73,7 +73,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({ activeTab, onTabSelect }
     <View pointerEvents="box-none" className="absolute bottom-6 left-0 right-0 items-center justify-center" style={{ zIndex: 50 }}>
       <View 
         style={{ 
-          backgroundColor: "#1F1E24", 
+          backgroundColor: theme.primary, 
           shadowColor: "#000000",
           shadowOffset: { width: 0, height: 10 },
           shadowOpacity: 0.25,
@@ -96,7 +96,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({ activeTab, onTabSelect }
             bottom: 10,
             left: pillLayout.x,
             width: pillLayout.width,
-            backgroundColor: theme.primary,
+            backgroundColor: theme.backgroundSecondary,
             borderRadius: theme.borderRadiusButton,
           }}
           layout={LinearTransition.duration(300)}
@@ -123,13 +123,15 @@ export const BottomDock: React.FC<BottomDockProps> = ({ activeTab, onTabSelect }
                   tab.provider,
                   isActive ? (tab.slug === "home" ? "home" : tab.icon) : (tab.slug === "home" ? "home-outline" : tab.icon),
                   20,
-                  isActive ? theme.primaryContrast : "#9CA3AF"
+                  isActive 
+                    ? theme.primary 
+                    : "rgba(255, 255, 255, 0.75)"
                 )}
                 {isActive && (
                   <Text
                     numberOfLines={1}
                     style={{ 
-                      color: theme.primaryContrast, 
+                      color: theme.primary, 
                       fontFamily: "Outfit_700Bold", 
                       fontSize: 13,
                       marginLeft: 8
