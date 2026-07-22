@@ -105,14 +105,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
 
   // Determine active font fallback based on theme
   const getFontFamily = (weight: "Regular" | "Medium" | "Bold") => {
-    const isRetro = currentTheme === "retro" || currentTheme === "mario";
-    if (isRetro) {
-      return Platform.OS === "ios" ? "Courier-Bold" : "monospace";
-    }
     switch (weight) {
-      case "Regular": return "Outfit_400Regular";
-      case "Medium": return "Outfit_500Medium";
-      case "Bold": return "Outfit_700Bold";
+      case "Regular": return theme.fontFamilyRegular;
+      case "Medium": return theme.fontFamilyMedium;
+      case "Bold": return theme.fontFamilyBold;
     }
   };
 

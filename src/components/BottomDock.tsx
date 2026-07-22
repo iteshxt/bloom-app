@@ -14,6 +14,14 @@ interface BottomDockProps {
 export const BottomDock: React.FC<BottomDockProps> = ({ activeTab, onTabSelect }) => {
   const { theme, currentTheme } = useTheme();
 
+  const getFontFamily = (weight: "Regular" | "Medium" | "Bold") => {
+    switch (weight) {
+      case "Regular": return theme.fontFamilyRegular;
+      case "Medium": return theme.fontFamilyMedium;
+      case "Bold": return theme.fontFamilyBold;
+    }
+  };
+
   const tabs: { slug: TabSlug; label: string; icon: string; provider: "ionicons" | "feather" | "mci" }[] = [
     { slug: "home", label: "Home", icon: "home", provider: "ionicons" },
     { slug: "focus", label: "Focus", icon: "clock", provider: "feather" },
@@ -132,7 +140,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({ activeTab, onTabSelect }
                     numberOfLines={1}
                     style={{ 
                       color: theme.primary, 
-                      fontFamily: "Outfit_700Bold", 
+                      fontFamily: getFontFamily("Bold"), 
                       fontSize: 13,
                       marginLeft: 8
                     }} 

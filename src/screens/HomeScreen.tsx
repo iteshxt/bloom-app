@@ -830,7 +830,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
             </View>
             <TouchableOpacity 
               onPress={() => setWeekRange(prev => prev === "This Week" ? "Last Week" : "This Week")}
-              style={{ borderColor: "rgba(131, 64, 99, 0.2)", borderWidth: 1, borderRadius: 20 }}
+              style={{ borderColor: "rgba(131, 64, 99, 0.2)", borderWidth: 1, borderRadius: theme.borderRadiusButton }}
               className="px-3.5 py-1.5 flex-row items-center bg-white"
             >
               <Text style={{ color: theme.text, fontFamily: getFontFamily("Medium"), fontSize: 10, marginRight: 4 }}>{weekRange}</Text>
@@ -941,7 +941,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
               </View>
               
               <View className="items-center justify-center">
-                <View style={{ backgroundColor: `${theme.accent}20`, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+                <View style={{ backgroundColor: `${theme.accent}20`, paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.borderRadiusCard }}>
                   <Text style={{ color: theme.accent, fontFamily: getFontFamily("Bold"), fontSize: 10 }}>SYNCED</Text>
                 </View>
               </View>
@@ -952,7 +952,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
               </View>
             </View>
 
-            <View style={{ backgroundColor: theme.backgroundSecondary, padding: 12, borderRadius: 12, flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ backgroundColor: theme.backgroundSecondary, padding: 12, borderRadius: theme.borderRadiusCard, flexDirection: 'row', alignItems: 'center' }}>
               <Ionicons name="sparkles" size={16} color="#D99B26" style={{ marginRight: 10 }} />
               <Text style={{ color: theme.text, fontFamily: getFontFamily("Medium"), fontSize: 11, flex: 1, lineHeight: 16 }}>
                 Great job! You and Sarah are highly synchronized this week! Keep the momentum going.
@@ -981,7 +981,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
             style={{ 
               borderColor: theme.border, 
               borderWidth: theme.borderWidth, 
-              borderRadius: 16,
+              borderRadius: theme.borderRadiusCard,
               backgroundColor: theme.background,
               padding: 14,
               marginBottom: 16
@@ -1041,7 +1041,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
               {pastReflections.map((ref, idx) => (
                 <View 
                   key={idx} 
-                  style={{ backgroundColor: theme.backgroundSecondary, borderRadius: 12, padding: 12, marginBottom: 8 }}
+                  style={{ backgroundColor: theme.backgroundSecondary, borderRadius: theme.borderRadiusCard, padding: 12, marginBottom: 8 }}
                 >
                   <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Bold"), fontSize: 9, marginBottom: 4 }}>
                     {ref.date}
@@ -1243,7 +1243,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
                         style={{
                           width: 32,
                           height: 32,
-                          borderRadius: 16,
+                          borderRadius: theme.borderRadiusCard,
                           backgroundColor: isSelected ? theme.primary : theme.background,
                           borderWidth: isSelected ? 0 : 1,
                           borderColor: theme.border,

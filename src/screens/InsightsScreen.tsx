@@ -346,7 +346,7 @@ export const InsightsScreen: React.FC = () => {
                         style={{
                           borderWidth: 1.5,
                           borderColor: theme.primary,
-                          borderRadius: 20,
+                          borderRadius: theme.borderRadiusButton,
                           paddingHorizontal: 16,
                           paddingVertical: 6,
                         }}
@@ -461,7 +461,7 @@ export const InsightsScreen: React.FC = () => {
                 })}
               </View>
 
-              <View style={{ backgroundColor: `${theme.primary}10`, padding: 12, borderRadius: 16 }} className="flex-row items-center">
+              <View style={{ backgroundColor: `${theme.primary}10`, padding: 12, borderRadius: theme.borderRadiusCard }} className="flex-row items-center">
                 <Ionicons name="bulb-outline" size={16} color={theme.primary} style={{ marginRight: 8 }} />
                 <Text style={{ color: theme.primary, fontFamily: getFontFamily("Medium"), fontSize: 11, lineHeight: 16, flex: 1 }}>
                   You stayed focused 30 mins longer on days you logged a Great mood rating while co-working with Sarah.
@@ -502,7 +502,7 @@ export const InsightsScreen: React.FC = () => {
                 </View>
               ))}
 
-              <View style={{ backgroundColor: `${theme.warning}10`, padding: 12, borderRadius: 16, marginTop: 12 }} className="flex-row items-center">
+              <View style={{ backgroundColor: `${theme.warning}10`, padding: 12, borderRadius: theme.borderRadiusCard, marginTop: 12 }} className="flex-row items-center">
                 <Ionicons name="time-outline" size={16} color={theme.warning} style={{ marginRight: 8 }} />
                 <Text style={{ color: theme.warning, fontFamily: getFontFamily("Medium"), fontSize: 11, lineHeight: 16, flex: 1 }}>
                   Most distractions occurred between 2 PM and 4 PM. Try planning a Pomodoro co-working session in this block!
@@ -589,7 +589,7 @@ export const InsightsScreen: React.FC = () => {
                       backgroundColor: theme.backgroundSecondary,
                       width: 32,
                       height: 32,
-                      borderRadius: 16,
+                      borderRadius: theme.borderRadiusCard,
                       alignItems: "center",
                       justifyContent: "center"
                     }}
@@ -609,7 +609,7 @@ export const InsightsScreen: React.FC = () => {
                     backgroundColor: theme.background, 
                     borderColor: theme.border, 
                     borderWidth: theme.borderWidth,
-                    borderRadius: 16,
+                    borderRadius: theme.borderRadiusCard,
                     padding: 16,
                     marginBottom: 24,
                     alignItems: "center"
