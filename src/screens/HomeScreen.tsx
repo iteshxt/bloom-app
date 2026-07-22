@@ -14,7 +14,8 @@ import {
   NativeModules,
   Animated as AnimatedRN,
   PanResponder,
-  StyleSheet
+  StyleSheet,
+  TouchableWithoutFeedback
 } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
 import { useTasks, Task } from "../contexts/TasksContext";
@@ -472,14 +473,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
   };
 
   const getFontFamily = (weight: "Regular" | "Medium" | "Bold") => {
-    const isRetro = currentTheme === "retro" || currentTheme === "mario";
-    if (isRetro) {
-      return Platform.OS === "ios" ? "Courier-Bold" : "monospace";
-    }
     switch (weight) {
-      case "Regular": return "Outfit_400Regular";
-      case "Medium": return "Outfit_500Medium";
-      case "Bold": return "Outfit_700Bold";
+      case "Regular": return theme.fontFamilyRegular;
+      case "Medium": return theme.fontFamilyMedium;
+      case "Bold": return theme.fontFamilyBold;
     }
   };
 
@@ -1090,106 +1087,131 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
 
       {isModalVisible && (
         <View style={[StyleSheet.absoluteFill, { zIndex: 99999, justifyContent: "flex-end" }]}>
-          {/* Translucent Backdrop */}
-          <Animated.View 
-            entering={FadeIn.duration(200)}
-            exiting={FadeOut.duration(200)}
-            style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0, 0, 0, 0.4)" }]}
-          />
+          {/* Translucent Backdrop - Tap empty space to close */}
+          <TouchableWithoutFeedback onPress={() => setIsModalVisible(false)}>
+            <Animated.View 
+              entering={FadeIn.duration(200)}
+              exiting={FadeOut.duration(200)}
+              style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0, 0, 0, 0.4)" }]}
+            />
+          </TouchableWithoutFeedback>
+
           {/* Modal Container */}
           <Animated.View 
             entering={SlideInDown.duration(250)}
             exiting={SlideOutDown.duration(200)}
-            style={{ backgroundColor: theme.cardBg, borderTopLeftRadius: theme.borderRadiusCard, borderTopRightRadius: theme.borderRadiusCard, borderWidth: theme.borderWidth, borderColor: theme.border, padding: 24, paddingBottom: 40 }}
+            style={{ 
+              backgroundColor: theme.cardBg, 
+              borderTopLeftRadius: theme.borderRadiusCard * 1.2, 
+              borderTopRightRadius: theme.borderRadiusCard * 1.2, 
+              borderWidth: theme.borderWidth, 
+              borderColor: theme.border, 
+              paddingHorizontal: 24, 
+              paddingTop: 12,
+              paddingBottom: 40 
+            }}
           >
+            {/* Sheet drag indicator */}
+            <View className="items-center mb-4">
+              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textSecondary, opacity: 0.2 }} />
+            </View>
+
             <View className="flex-row items-center justify-between mb-5">
-              <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 18 }}>
+              <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 19 }}>
                 Add New Task
               </Text>
-              <TouchableOpacity onPress={() => setIsModalVisible(false)}>
-                <Ionicons name="close-circle" size={24} color={theme.textSecondary} />
+              <TouchableOpacity 
+                onPress={() => setIsModalVisible(false)}
+                style={{ backgroundColor: `${theme.border}30`, padding: 4, borderRadius: 99 }}
+              >
+                <Ionicons name="close" size={18} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
 
             {/* Field: Name */}
-            <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 12, marginBottom: 6 }}>
-              Task Name / Title
-            </Text>
-            <TextInput
-              placeholder="e.g. Solve DSA Graph Questions"
-              placeholderTextColor="#9CA3AF"
-              value={taskName}
-              onChangeText={setTaskName}
-              style={{
-                backgroundColor: theme.background,
-                color: theme.text,
-                fontFamily: getFontFamily("Medium"),
-                borderColor: theme.border,
-                borderWidth: theme.borderWidth,
-                borderRadius: theme.borderRadiusButton,
-                padding: 12,
-                fontSize: 14,
-                marginBottom: 16
-              }}
-            />
+            <View className="mb-4">
+              <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Bold"), fontSize: 10, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6 }}>
+                Task Name / Title
+              </Text>
+              <View className="flex-row items-center" style={{ backgroundColor: theme.background, borderColor: theme.border, borderWidth: theme.borderWidth, borderRadius: theme.borderRadiusButton, paddingHorizontal: 12 }}>
+                <Feather name="edit-3" size={15} color={theme.textSecondary} style={{ marginRight: 8 }} />
+                <TextInput
+                  placeholder="e.g. Solve DSA Graph Questions"
+                  placeholderTextColor={`${theme.textSecondary}80`}
+                  value={taskName}
+                  onChangeText={setTaskName}
+                  style={{
+                    flex: 1,
+                    color: theme.text,
+                    fontFamily: getFontFamily("Medium"),
+                    paddingVertical: 10,
+                    fontSize: 14
+                  }}
+                />
+              </View>
+            </View>
 
             {/* Field: Category Tag */}
-            <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 12, marginBottom: 6 }}>
-              Category Tag
-            </Text>
-            <TextInput
-              placeholder="Type tag (e.g. LeetCode)"
-              placeholderTextColor="#9CA3AF"
-              value={taskCategory}
-              onChangeText={setTaskCategory}
-              style={{
-                backgroundColor: theme.background,
-                color: theme.text,
-                fontFamily: getFontFamily("Medium"),
-                borderColor: theme.border,
-                borderWidth: theme.borderWidth,
-                borderRadius: theme.borderRadiusButton,
-                padding: 12,
-                fontSize: 14,
-                marginBottom: 10
-              }}
-            />
+            <View className="mb-4">
+              <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Bold"), fontSize: 10, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6 }}>
+                Category Tag
+              </Text>
+              <View className="flex-row items-center" style={{ backgroundColor: theme.background, borderColor: theme.border, borderWidth: theme.borderWidth, borderRadius: theme.borderRadiusButton, paddingHorizontal: 12 }}>
+                <Feather name="tag" size={15} color={theme.textSecondary} style={{ marginRight: 8 }} />
+                <TextInput
+                  placeholder="Type tag (e.g. LeetCode)"
+                  placeholderTextColor={`${theme.textSecondary}80`}
+                  value={taskCategory}
+                  onChangeText={setTaskCategory}
+                  style={{
+                    flex: 1,
+                    color: theme.text,
+                    fontFamily: getFontFamily("Medium"),
+                    paddingVertical: 10,
+                    fontSize: 14
+                  }}
+                />
+              </View>
+            </View>
 
             {/* Tag suggestions */}
             <View className="flex-row flex-wrap mb-4">
-              {suggestedTags.map(tag => (
-                <TouchableOpacity
-                  key={tag}
-                  onPress={() => setTaskCategory(tag)}
-                  style={{
-                    backgroundColor: taskCategory === tag ? theme.text : theme.backgroundSecondary,
-                    borderRadius: theme.borderRadiusButton,
-                    paddingHorizontal: 10,
-                    paddingVertical: 5,
-                    marginRight: 6,
-                    marginBottom: 6,
-                    borderWidth: currentTheme === "mario" ? theme.borderWidth : 0,
-                    borderColor: "#000000"
-                  }}
-                >
-                  <Text style={{ 
-                    color: taskCategory === tag ? theme.primaryContrast : theme.textSecondary,
-                    fontFamily: getFontFamily("Bold"),
-                    fontSize: 10
-                  }}>
-                    {tag}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {suggestedTags.map(tag => {
+                const isSelected = taskCategory === tag;
+                return (
+                  <TouchableOpacity
+                    key={tag}
+                    onPress={() => setTaskCategory(tag)}
+                    style={{
+                      backgroundColor: isSelected ? theme.primary : `${theme.accent}20`,
+                      borderRadius: theme.borderRadiusButton,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      marginRight: 8,
+                      marginBottom: 8,
+                      borderWidth: currentTheme === "mario" ? theme.borderWidth : 0,
+                      borderColor: "#000000"
+                    }}
+                  >
+                    <Text style={{ 
+                      color: isSelected ? theme.primaryContrast : theme.text,
+                      fontFamily: getFontFamily("Bold"),
+                      fontSize: 10
+                    }}>
+                      {tag}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             {/* Field: Recurring Toggle */}
-            <View className="flex-row items-center justify-between mb-4">
+            <View className="flex-row items-center justify-between mb-4 pb-2">
               <View>
-                <Text style={{ color: theme.text, fontFamily: getFontFamily("Medium"), fontSize: 13 }}>
+                <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 14 }}>
                   Recurring Habit
                 </Text>
-                <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular"), fontSize: 10 }}>
+                <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular"), fontSize: 10, marginTop: 1 }}>
                   Repeat this task on selected days
                 </Text>
               </View>
@@ -1203,7 +1225,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
                     setSelectedDays([]);
                   }
                 }}
-                trackColor={{ false: theme.border, true: theme.text }}
+                trackColor={{ false: theme.border, true: theme.primary }}
                 thumbColor={Platform.OS === "android" ? "#ffffff" : undefined}
               />
             </View>
@@ -1211,7 +1233,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
             {/* Days Selector */}
             {isRecurring && (
               <View className="mb-6">
-                <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 11, marginBottom: 8 }}>
+                <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Bold"), fontSize: 10, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 }}>
                   Repeat On:
                 </Text>
                 <View className="flex-row justify-between">
@@ -1225,8 +1247,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
                           width: 32,
                           height: 32,
                           borderRadius: 16,
-                          backgroundColor: isSelected ? theme.text : theme.backgroundSecondary,
-                          borderWidth: isSelected ? 0 : theme.borderWidth,
+                          backgroundColor: isSelected ? theme.primary : theme.background,
+                          borderWidth: isSelected ? 0 : 1,
                           borderColor: theme.border,
                           alignItems: "center",
                           justifyContent: "center"
@@ -1249,7 +1271,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
             {/* Add Submit Button */}
             <TouchableOpacity
               onPress={handleAddTaskSubmit}
-              style={{ backgroundColor: theme.primary, borderRadius: theme.borderRadiusButton, borderWidth: currentTheme === "mario" ? theme.borderWidth : 0, borderColor: "#000000" }}
+              style={{ 
+                backgroundColor: theme.primary, 
+                borderRadius: theme.borderRadiusButton, 
+                borderWidth: currentTheme === "mario" ? theme.borderWidth : 0, 
+                borderColor: "#000000",
+                shadowColor: theme.primary,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: theme.shadowOpacity,
+                shadowRadius: 8,
+                elevation: theme.shadowOpacity > 0 ? 3 : 0
+              }}
               className="py-3.5 items-center justify-center"
             >
               <Text style={{ color: theme.primaryContrast, fontFamily: getFontFamily("Bold"), fontSize: 14 }}>

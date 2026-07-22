@@ -9,7 +9,9 @@ import {
   Modal, 
   TextInput, 
   Alert,
-  Image
+  Image,
+  TouchableWithoutFeedback,
+  Platform
 } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
 import { useToast } from "../contexts/ToastContext";
@@ -167,6 +169,14 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const [isModalVisible, setIsModalVisible] = useState(false);
+
+  const getFontFamily = (weight: "Regular" | "Medium" | "Bold") => {
+    switch (weight) {
+      case "Regular": return theme.fontFamilyRegular;
+      case "Medium": return theme.fontFamilyMedium;
+      case "Bold": return theme.fontFamilyBold;
+    }
+  };
 
   // Dynamic Tasks State
   const [tasks, setTasks] = useState<Task[]>(getMockTasks(currentDate));
@@ -887,56 +897,82 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
       {/* Premium Task Modal - Themed and structured */}
       {isModalVisible && (
         <View style={[StyleSheet.absoluteFill, { zIndex: 99999, justifyContent: "flex-end" }]}>
-          {/* Translucent Backdrop */}
-          <Animated.View 
-            entering={FadeIn.duration(200)}
-            exiting={FadeOut.duration(200)}
-            style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0, 0, 0, 0.4)" }]}
-          />
+          {/* Translucent Backdrop - Touch to close */}
+          <TouchableWithoutFeedback onPress={() => {
+            setIsModalVisible(false);
+            if (onModalToggle) onModalToggle(false);
+          }}>
+            <Animated.View 
+              entering={FadeIn.duration(200)}
+              exiting={FadeOut.duration(200)}
+              style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0, 0, 0, 0.4)" }]}
+            />
+          </TouchableWithoutFeedback>
+
           {/* Modal Container */}
           <Animated.View 
             entering={SlideInDown.duration(250)}
             exiting={SlideOutDown.duration(200)}
-            style={{ backgroundColor: theme.cardBg, borderTopLeftRadius: theme.borderRadiusCard, borderTopRightRadius: theme.borderRadiusCard, borderWidth: theme.borderWidth, borderColor: theme.border, padding: 24, paddingBottom: 40 }}
+            style={{ 
+              backgroundColor: theme.cardBg, 
+              borderTopLeftRadius: theme.borderRadiusCard * 1.2, 
+              borderTopRightRadius: theme.borderRadiusCard * 1.2, 
+              borderWidth: theme.borderWidth, 
+              borderColor: theme.border, 
+              paddingHorizontal: 24, 
+              paddingTop: 12,
+              paddingBottom: 40 
+            }}
           >
-            <View className="flex-row items-center justify-between mb-6">
-              <Text style={{ color: theme.text, fontFamily: "Outfit_700Bold", fontSize: 20 }}>
+            {/* Sheet drag indicator */}
+            <View className="items-center mb-4">
+              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textSecondary, opacity: 0.2 }} />
+            </View>
+
+            <View className="flex-row items-center justify-between mb-5">
+              <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 19 }}>
                 Schedule Shared Entry
               </Text>
-              <TouchableOpacity onPress={() => {
-                setIsModalVisible(false);
-                if (onModalToggle) onModalToggle(false);
-              }}>
-                <Ionicons name="close-circle" size={28} color={theme.textSecondary} />
+              <TouchableOpacity 
+                onPress={() => {
+                  setIsModalVisible(false);
+                  if (onModalToggle) onModalToggle(false);
+                }}
+                style={{ backgroundColor: `${theme.border}30`, padding: 4, borderRadius: 99 }}
+              >
+                <Ionicons name="close" size={18} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
 
             {/* Input: Title */}
-            <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_600SemiBold", fontSize: 13, marginBottom: 8 }}>
-              Activity Title
-            </Text>
-            <TextInput
-              value={newTitle}
-              onChangeText={setNewTitle}
-              placeholder="e.g. Design admin settings panel"
-              placeholderTextColor="#9CA3AF"
-              style={{ 
-                backgroundColor: theme.background, 
-                color: theme.text, 
-                fontFamily: "Outfit_500Medium", 
-                borderColor: theme.border, 
-                borderWidth: theme.borderWidth,
-                borderRadius: theme.borderRadiusButton
-              }}
-              className="p-4 mb-4"
-            />
+            <View className="mb-4">
+              <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Bold"), fontSize: 10, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6 }}>
+                Activity Title
+              </Text>
+              <View className="flex-row items-center" style={{ backgroundColor: theme.background, borderColor: theme.border, borderWidth: theme.borderWidth, borderRadius: theme.borderRadiusButton, paddingHorizontal: 12 }}>
+                <Feather name="edit-3" size={15} color={theme.textSecondary} style={{ marginRight: 8 }} />
+                <TextInput
+                  value={newTitle}
+                  onChangeText={setNewTitle}
+                  placeholder="e.g. Design admin settings panel"
+                  placeholderTextColor={`${theme.textSecondary}80`}
+                  style={{ 
+                    flex: 1,
+                    color: theme.text, 
+                    fontFamily: getFontFamily("Medium"), 
+                    paddingVertical: 10,
+                    fontSize: 14
+                  }}
+                />
+              </View>
+            </View>
 
             {/* Time Selector - Horizontal Scroll Chips */}
             <View className="mb-4">
-              <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_600SemiBold", fontSize: 13, marginBottom: 8 }}>
+              <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Bold"), fontSize: 10, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 }}>
                 Start Time
               </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4" contentContainerStyle={{ paddingRight: 24 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3" contentContainerStyle={{ paddingRight: 24 }}>
                 {HOURS.map(hour => {
                   const timeStr = `${hour.split(" ")[0]}:00 ${hour.split(" ")[1]}`;
                   const isSelected = newStart === timeStr;
@@ -946,7 +982,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
                       onPress={() => setNewStart(timeStr)}
                       style={{
                         backgroundColor: isSelected ? theme.primary : theme.background,
-                        borderColor: isSelected ? theme.primary : theme.border,
+                        borderColor: isSelected ? theme.primaryDark : theme.border,
                         borderWidth: theme.borderWidth,
                         borderRadius: theme.borderRadiusButton,
                         paddingVertical: 8,
@@ -954,7 +990,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
                         marginRight: 8
                       }}
                     >
-                      <Text style={{ color: isSelected ? theme.primaryContrast : theme.text, fontFamily: "Outfit_600SemiBold", fontSize: 12 }}>
+                      <Text style={{ color: isSelected ? theme.primaryContrast : theme.text, fontFamily: getFontFamily("Bold"), fontSize: 12 }}>
                         {timeStr}
                       </Text>
                     </TouchableOpacity>
@@ -962,10 +998,10 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
                 })}
               </ScrollView>
 
-              <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_600SemiBold", fontSize: 13, marginBottom: 8 }}>
+              <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Bold"), fontSize: 10, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 }}>
                 End Time
               </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 24 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-1" contentContainerStyle={{ paddingRight: 24 }}>
                 {HOURS.map(hour => {
                   const timeStr = `${hour.split(" ")[0]}:00 ${hour.split(" ")[1]}`;
                   const isSelected = newEnd === timeStr;
@@ -975,7 +1011,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
                       onPress={() => setNewEnd(timeStr)}
                       style={{
                         backgroundColor: isSelected ? theme.primary : theme.background,
-                        borderColor: isSelected ? theme.primary : theme.border,
+                        borderColor: isSelected ? theme.primaryDark : theme.border,
                         borderWidth: theme.borderWidth,
                         borderRadius: theme.borderRadiusButton,
                         paddingVertical: 8,
@@ -983,7 +1019,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
                         marginRight: 8
                       }}
                     >
-                      <Text style={{ color: isSelected ? theme.primaryContrast : theme.text, fontFamily: "Outfit_600SemiBold", fontSize: 12 }}>
+                      <Text style={{ color: isSelected ? theme.primaryContrast : theme.text, fontFamily: getFontFamily("Bold"), fontSize: 12 }}>
                         {timeStr}
                       </Text>
                     </TouchableOpacity>
@@ -993,12 +1029,12 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
             </View>
 
             {/* Selector: Category & Assignee */}
-            <View className="flex-row mb-8">
+            <View className="flex-row mb-6">
               <View className="flex-1 mr-2">
-                <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_600SemiBold", fontSize: 13, marginBottom: 8 }}>
+                <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Bold"), fontSize: 10, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 }}>
                   Category
                 </Text>
-                <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center justify-between" style={{ paddingVertical: 4 }}>
                   {["To Do", "Reminder", "Event"].map((cat) => (
                     <TouchableOpacity
                       key={cat}
@@ -1006,12 +1042,12 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
                       style={{
                         paddingBottom: 4,
                         borderBottomWidth: newCategory === cat ? 2 : 0,
-                        borderBottomColor: theme.text
+                        borderBottomColor: theme.primary
                       }}
                     >
                       <Text style={{ 
                         color: newCategory === cat ? theme.text : theme.textSecondary, 
-                        fontFamily: "Outfit_600SemiBold", 
+                        fontFamily: getFontFamily("Bold"), 
                         fontSize: 12
                       }}>
                         {cat}
@@ -1022,7 +1058,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
               </View>
 
               <View className="flex-1 ml-4">
-                <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_600SemiBold", fontSize: 13, marginBottom: 8 }}>
+                <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Bold"), fontSize: 10, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 }}>
                   Ownership
                 </Text>
                 <View className="flex-row p-1" style={{ backgroundColor: theme.background, borderRadius: theme.borderRadiusButton, borderWidth: theme.borderWidth, borderColor: theme.border }}>
@@ -1031,16 +1067,16 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
                       key={own}
                       onPress={() => setNewOwner(own as any)}
                       style={{
-                        backgroundColor: newOwner === own ? theme.text : "transparent",
+                        backgroundColor: newOwner === own ? theme.primary : "transparent",
                         flex: 1,
-                        paddingVertical: 8,
+                        paddingVertical: 6,
                         borderRadius: theme.borderRadiusButton,
                         alignItems: "center"
                       }}
                     >
                       <Text style={{ 
                         color: newOwner === own ? theme.primaryContrast : theme.textSecondary, 
-                        fontFamily: "Outfit_600SemiBold", 
+                        fontFamily: getFontFamily("Bold"), 
                         fontSize: 12
                       }}>
                         {own}
@@ -1054,10 +1090,20 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
             {/* Action Buttons - Theme Cohesive styling */}
             <TouchableOpacity
               onPress={handleAddTask}
-              style={{ backgroundColor: theme.primary, borderRadius: theme.borderRadiusButton, borderWidth: currentTheme === "mario" ? theme.borderWidth : 0, borderColor: "#000000" }} 
-              className="py-4 items-center justify-center mb-6"
+              style={{ 
+                backgroundColor: theme.primary, 
+                borderRadius: theme.borderRadiusButton, 
+                borderWidth: currentTheme === "mario" ? theme.borderWidth : 0, 
+                borderColor: "#000000",
+                shadowColor: theme.primary,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: theme.shadowOpacity,
+                shadowRadius: 8,
+                elevation: theme.shadowOpacity > 0 ? 3 : 0
+              }} 
+              className="py-3.5 items-center justify-center"
             >
-              <Text style={{ color: theme.primaryContrast, fontFamily: "Outfit_700Bold", fontSize: 16 }}>
+              <Text style={{ color: theme.primaryContrast, fontFamily: getFontFamily("Bold"), fontSize: 15 }}>
                 Create Shared Entry
               </Text>
             </TouchableOpacity>
