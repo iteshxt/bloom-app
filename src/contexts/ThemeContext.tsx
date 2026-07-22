@@ -64,15 +64,15 @@ export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors
     name: "Midnight Orchid",
     milestone: "5 Days",
     colors: {
-      primary: "#88708E", // Dusky Lilac
+      primary: "#715578", // Rich Dusky Orchid
       primaryDark: "#312A44", // Midnight Orchid
       primaryContrast: "#FFFFFF", 
       background: "#FAF8FC", // Lighter lavender-cream base
       backgroundSecondary: "#D7C5D8", // Plum Blossom accents
       text: "#312A44", // Midnight Orchid dark text
-      textSecondary: "#6D5E7A", // Muted slate orchid
+      textSecondary: "#544660", // Darker slate amethyst for legibility
       accent: "#BAAAC8", // Iris Mist
-      warning: "#DAD4DF", // Silver Wisteria
+      warning: "#C24B62", // Legible Deep Berry Red
       border: "rgba(136, 112, 142, 0.15)",
       statusBar: "dark",
       cardBg: "#FFFFFF",
@@ -99,9 +99,9 @@ export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors
       background: "#FCFDEB", // Extremely light cream/yellow base
       backgroundSecondary: "#FAFCD0", // Lemon Chiffon accents
       text: "#211A1B", // Deep dark warm charcoal neutral
-      textSecondary: "#615759", // Muted slate gray with subtle warm hint
+      textSecondary: "#4A3F41", // Darker slate grey for legibility
       accent: "#8BBBA7", // Soft green
-      warning: "#D96B6B",
+      warning: "#C44040", // High contrast soft red
       border: "rgba(204, 73, 100, 0.12)",
       statusBar: "dark",
       cardBg: "#FFFFFF",
@@ -122,15 +122,15 @@ export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors
     name: "Matcha Honey",
     milestone: "15 Days",
     colors: {
-      primary: "#9CA764", // Matcha Cream
-      primaryDark: "#7E874D",
+      primary: "#707C3D", // Rich organic Matcha Olive
+      primaryDark: "#525C2B",
       primaryContrast: "#F1E8C7", // Milky Honey text on primary
       background: "#FAF8F0", // Extremely light cream base
       backgroundSecondary: "#F1E8C7", // Milky Honey accents
       text: "#24261C", // Deep dark forest charcoal neutral
-      textSecondary: "#626654", // Muted sage slate
+      textSecondary: "#4E5240", // Darker sage slate for legibility
       accent: "#AC7B64", // Terracotta warm accent
-      warning: "#D96B6B",
+      warning: "#C05040", // High contrast matcha honey red
       border: "rgba(156, 167, 100, 0.12)",
       statusBar: "dark",
       cardBg: "#FFFFFF",
@@ -151,15 +151,15 @@ export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors
     name: "Terracotta Rose",
     milestone: "20 Days",
     colors: {
-      primary: "#A76D5E", // Dusty Rose
-      primaryDark: "#846044", // Terracotta Brown
+      primary: "#8D4E3E", // Deeper Terracotta Rose
+      primaryDark: "#6E3B2E",
       primaryContrast: "#FFFFFF",
       background: "#FAF7F2", // Lighter warm cream base
       backgroundSecondary: "#DFCCB1", // Warm Beige accents
       text: "#302319", // Deep dark terracotta charcoal neutral
-      textSecondary: "#6B5C51", // Muted slate taupe neutral
+      textSecondary: "#54463C", // Darker slate clay for legibility
       accent: "#98A086", // Sage Green
-      warning: "#C4A071", // Golden Tan
+      warning: "#B2503A", // Clay red warning
       border: "rgba(167, 109, 94, 0.12)",
       statusBar: "dark",
       cardBg: "#FFFFFF",
@@ -215,9 +215,9 @@ export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors
       background: "#FFF7F8", // Lighter pastel pink base
       backgroundSecondary: "#FCD0D9", // Soft Pastel Pink accents
       text: "#610027", // Deep Maroon dark text
-      textSecondary: "#A36070", // Muted rose slate
+      textSecondary: "#6E3442", // Deeper rose slate for legibility
       accent: "#B45A69", // Dusty Pink
-      warning: "#D96B6B",
+      warning: "#A62424", // Arcade high visibility warning red
       border: "rgba(145, 43, 72, 0.15)",
       statusBar: "dark",
       cardBg: "#FFFFFF",
