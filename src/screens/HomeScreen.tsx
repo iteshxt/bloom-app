@@ -654,29 +654,29 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
                 const nextIdx = (statuses.indexOf(partnerStatus) + 1) % statuses.length;
                 setPartnerStatus(statuses[nextIdx]);
               }}
-              style={{ backgroundColor: "#FDF8E7", borderWidth: 1, borderColor: "rgba(172, 99, 138, 0.15)", borderRadius: 999 }}
+              style={{ backgroundColor: `${theme.primary}12`, borderWidth: 1, borderColor: theme.border, borderRadius: 999 }}
               className="px-3.5 py-1.5 flex-row items-center"
             >
-              <Text style={{ color: theme.primary, fontFamily: getFontFamily("Bold"), fontSize: 11, marginRight: 4 }}>
+              <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 11, marginRight: 4 }}>
                 Status Check
               </Text>
-              <Feather name="chevron-right" size={12} color={theme.primary} />
+              <Feather name="chevron-right" size={12} color={theme.text} />
             </TouchableOpacity>
           </View>
 
           {/* Active status panel */}
           {partnerStatus === "Studying" && (
             <View 
-              style={{ backgroundColor: "#FFF8E5", borderWidth: 1, borderColor: "rgba(131, 64, 99, 0.12)" }} 
+              style={{ backgroundColor: `${theme.accent}18`, borderWidth: 1, borderColor: theme.border }} 
               className="rounded-2xl p-4 mb-4 flex-row items-center justify-between"
             >
               <View className="flex-row items-center" style={{ flex: 1, marginRight: 12 }}>
-                <Ionicons name="book" size={18} color={theme.primary} style={{ marginRight: 8 }} />
-                <Text style={{ flex: 1, color: theme.primary, fontFamily: getFontFamily("Medium"), fontSize: 13 }} numberOfLines={1} ellipsizeMode="tail">
+                <Ionicons name="book" size={18} color={theme.text} style={{ marginRight: 8 }} />
+                <Text style={{ flex: 1, color: theme.text, fontFamily: getFontFamily("Medium"), fontSize: 13 }} numberOfLines={1} ellipsizeMode="tail">
                   Sarah is studying Graph Algorithms
                 </Text>
               </View>
-              <Text style={{ color: theme.primary, fontFamily: getFontFamily("Bold"), fontSize: 13 }} className="shrink-0">
+              <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 13 }} className="shrink-0">
                 24m Left
               </Text>
             </View>
@@ -684,23 +684,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
 
           {partnerStatus === "On Break" && (
             <View 
-              style={{ backgroundColor: `${theme.primary}12` }} 
-              className="rounded-2xl p-3 mb-4 flex-row items-center justify-between"
+              style={{ backgroundColor: `${theme.primary}1A`, borderWidth: 1, borderColor: theme.border }} 
+              className="rounded-2xl p-4 mb-4 flex-row items-center justify-between"
             >
-              <View className="flex-row items-center">
-                <Ionicons name="cafe-outline" size={16} color={theme.primary} style={{ marginRight: 6 }} />
-                <Text style={{ color: theme.primary, fontFamily: getFontFamily("Medium"), fontSize: 11 }}>
+              <View className="flex-row items-center" style={{ flex: 1, marginRight: 12 }}>
+                <Ionicons name="cafe" size={18} color={theme.text} style={{ marginRight: 8 }} />
+                <Text style={{ flex: 1, color: theme.text, fontFamily: getFontFamily("Medium"), fontSize: 13 }} numberOfLines={1} ellipsizeMode="tail">
                   Sarah is taking a coffee break
                 </Text>
               </View>
-              <Text style={{ color: theme.primary, fontFamily: getFontFamily("Bold"), fontSize: 11 }}>
+              <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 13 }} className="shrink-0">
                 5m Left
               </Text>
             </View>
           )}
 
           {/* Cheers & Nudge Row */}
-          <View style={{ borderTopWidth: 1, borderTopColor: "rgba(172, 99, 138, 0.1)", paddingTop: 16 }}>
+          <View style={{ borderTopWidth: 1, borderTopColor: theme.border, paddingTop: 16 }}>
             <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Bold"), fontSize: 11, marginBottom: 12 }}>
               Send Co-working Cheer
             </Text>
@@ -709,10 +709,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
               {/* Nudge Trigger */}
               <TouchableOpacity 
                 onPress={() => showToast(`Sent a Nudge to Sarah!`, "success")}
-                style={{ backgroundColor: "#F3E6EE" }}
+                style={{ backgroundColor: `${theme.accent}1E` }}
                 className="flex-row items-center px-4 py-3 rounded-2xl flex-1 mr-2 justify-center"
               >
-                <Ionicons name="leaf" size={16} color={theme.accent} style={{ marginRight: 6 }} />
+                <Ionicons name="leaf" size={16} color={theme.primary} style={{ marginRight: 6 }} />
                 <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 12 }}>Nudge</Text>
               </TouchableOpacity>
 
@@ -722,7 +722,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
                   triggerHeartBurst();
                   showToast(`Sent a Heart to Sarah!`, "success");
                 }}
-                style={{ backgroundColor: "#FCF5E2" }}
+                style={{ backgroundColor: `${theme.primary}1A` }}
                 className="flex-row items-center px-4 py-3 rounded-2xl flex-1 mx-2 justify-center"
               >
                 <Ionicons name="heart" size={16} color={theme.primary} style={{ marginRight: 6 }} />
@@ -732,10 +732,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
               {/* Coffee Trigger */}
               <TouchableOpacity 
                 onPress={() => showToast(`Sent a Coffee to Sarah!`, "success")}
-                style={{ backgroundColor: "#EFE6F5" }}
+                style={{ backgroundColor: `${theme.textSecondary}15` }}
                 className="flex-row items-center px-4 py-3 rounded-2xl flex-1 ml-2 justify-center"
               >
-                <Ionicons name="cafe" size={16} color={theme.primary} style={{ marginRight: 6 }} />
+                <Ionicons name="cafe" size={16} color={theme.textSecondary} style={{ marginRight: 6 }} />
                 <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 12 }}>Coffee</Text>
               </TouchableOpacity>
             </View>

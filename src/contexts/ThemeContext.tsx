@@ -180,16 +180,16 @@ export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors
     name: "Cool Cerulean",
     milestone: "25 Days",
     colors: {
-      primary: "#8EB1D1", // Cool Cerulean
+      primary: "#3B75A6", // Rich Cerulean Blue
       primaryDark: "#1C2B48", // Midnight Blue
       primaryContrast: "#FFFFFF",
       background: "#F4F7F9", // Lighter platinum/blue base
       backgroundSecondary: "#E8ECEF", // Platinum accents
       text: "#1C2B48", // Midnight Blue text
-      textSecondary: "#5A6F8B", // Muted steel slate gray
-      accent: "#A7C7E7", // Baby Blue Eyes
-      warning: "#C4D8E5", // Light Blue Grey
-      border: "rgba(142, 177, 209, 0.15)",
+      textSecondary: "#3E526B", // Darker slate gray for legibility
+      accent: "#7CA6CD", // Curated Medium Slate Blue
+      warning: "#E06D6D", // Highly visible soft red
+      border: "rgba(59, 117, 166, 0.18)",
       statusBar: "dark",
       cardBg: "#FFFFFF",
       borderRadiusCard: 8,
