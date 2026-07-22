@@ -243,13 +243,15 @@ export const InsightsScreen: React.FC = () => {
                     </View>
 
                     {/* Split Monthly Grids (Oct, Nov, Dec represented by 4, 4, 5 columns) */}
-                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginVertical: 16 }}>
-                      {/* Weekday labels */}
-                      <View style={{ marginRight: 10, height: 90, paddingVertical: 1 }} className="justify-between">
+                    <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "center", marginVertical: 16 }}>
+                      {/* Weekday labels aligned perfectly to cells */}
+                      <View style={{ marginRight: 10, flexDirection: "column", paddingBottom: 1 }}>
                         {["M", "T", "W", "T", "F", "S", "S"].map((day, idx) => (
-                          <Text key={idx} style={{ color: theme.textSecondary, opacity: 0.6, fontFamily: getFontFamily("Medium"), fontSize: 8 }}>
-                            {day}
-                          </Text>
+                          <View key={idx} style={{ height: 11, justifyContent: "center", marginVertical: 1 }}>
+                            <Text style={{ color: theme.textSecondary, opacity: 0.6, fontFamily: getFontFamily("Medium"), fontSize: 8, textAlign: "right" }}>
+                              {day}
+                            </Text>
+                          </View>
                         ))}
                       </View>
 
@@ -326,12 +328,18 @@ export const InsightsScreen: React.FC = () => {
                     {/* Summary Habit Stats row - Inspiration Layout */}
                     <View style={{ borderTopWidth: 1, borderTopColor: theme.border, paddingTop: 16, marginTop: 4 }} className="flex-row items-center justify-between">
                       <View>
-                        <Text style={{ color: theme.text, fontFamily: getFontFamily("Medium"), fontSize: 13 }}>
-                          Longest Streak:  <Text style={{ fontFamily: getFontFamily("Bold") }}>{streak + 4} 💧</Text>
-                        </Text>
-                        <Text style={{ color: theme.text, fontFamily: getFontFamily("Medium"), fontSize: 13, marginTop: 4 }}>
-                          Current Streak:  <Text style={{ fontFamily: getFontFamily("Bold") }}>{streak} 🔥</Text>
-                        </Text>
+                        <View className="flex-row items-center">
+                          <Text style={{ color: theme.text, fontFamily: getFontFamily("Medium"), fontSize: 13 }}>
+                            Longest Streak:  <Text style={{ fontFamily: getFontFamily("Bold") }}>{streak + 4} </Text>
+                          </Text>
+                          <Ionicons name="trophy" size={14} color="#D99B26" style={{ marginLeft: 2 }} />
+                        </View>
+                        <View className="flex-row items-center mt-1.5">
+                          <Text style={{ color: theme.text, fontFamily: getFontFamily("Medium"), fontSize: 13 }}>
+                            Current Streak:  <Text style={{ fontFamily: getFontFamily("Bold") }}>{streak} </Text>
+                          </Text>
+                          <Ionicons name="flame" size={14} color="#FF6D00" style={{ marginLeft: 2 }} />
+                        </View>
                       </View>
 
                       <TouchableOpacity 
