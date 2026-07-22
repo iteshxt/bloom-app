@@ -96,6 +96,7 @@ function AppContent() {
   const logoScale = useRef(new Animated.Value(0.4)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const [showSplash, setShowSplash] = useState(true);
+  const [minTimePassed, setMinTimePassed] = useState(false);
 
   useEffect(() => {
     // 1. Animate Logo Fade In and Scale Up
@@ -112,22 +113,26 @@ function AppContent() {
         useNativeDriver: true,
       }),
     ]).start();
+
+    // Guard minimum display time of 1 second
+    const timer = setTimeout(() => {
+      setMinTimePassed(true);
+    }, 1000);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    if (!isAppLoading) {
-      // 2. Once both fonts and theme have loaded, wait 800ms for user to enjoy animation, then fade out the entire splash screen
-      setTimeout(() => {
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 350,
-          useNativeDriver: true,
-        }).start(() => {
-          setShowSplash(false);
-        });
-      }, 800);
+    if (!isAppLoading && minTimePassed) {
+      // 2. Once loaded and 1.0s has passed, fade out splash screen overlay
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }).start(() => {
+        setShowSplash(false);
+      });
     }
-  }, [isAppLoading]);
+  }, [isAppLoading, minTimePassed]);
 
   // Use refs to avoid stale closures in PanResponder callbacks
   const activeTabRef = useRef(activeTab);
@@ -210,7 +215,7 @@ function AppContent() {
             bottom: 0,
             left: 0,
             right: 0,
-            backgroundColor: "#FAF8F3", 
+            backgroundColor: theme.background, 
             justifyContent: "center", 
             alignItems: "center", 
             opacity: fadeAnim,
@@ -220,9 +225,9 @@ function AppContent() {
           {/* Background Watermark Leaves */}
           <View style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0, overflow: "hidden" }} pointerEvents="none">
             <Ionicons 
-              name="leaf" 
+              name={theme.watermarkIcon as any} 
               size={350} 
-              color="#834063" 
+              color={theme.primary} 
               style={{ 
                 position: "absolute", 
                 left: -100, 
@@ -232,9 +237,9 @@ function AppContent() {
               }} 
             />
             <Ionicons 
-              name="leaf" 
+              name={theme.watermarkIcon as any} 
               size={450} 
-              color="#834063" 
+              color={theme.primary} 
               style={{ 
                 position: "absolute", 
                 right: -150, 
@@ -247,11 +252,11 @@ function AppContent() {
 
           {/* Animated Center Logo */}
           <Animated.View style={{ transform: [{ scale: logoScale }], opacity: logoOpacity, alignItems: "center" }}>
-            <Ionicons name="leaf" size={100} color="#834063" />
-            <Text style={{ fontSize: 38, color: "#834063", fontFamily: Platform.OS === "ios" ? "Georgia" : "serif", marginTop: 16, fontWeight: "bold" }}>
+            <Ionicons name={theme.watermarkIcon as any} size={100} color={theme.primary} />
+            <Text style={{ fontSize: 38, color: theme.text, fontFamily: Platform.OS === "ios" ? "Georgia" : "serif", marginTop: 16, fontWeight: "bold" }}>
               bloom
             </Text>
-            <Text style={{ fontSize: 11, color: "#8A707F", fontFamily: "Outfit_500Medium", marginTop: 8, letterSpacing: 3, textTransform: "uppercase" }}>
+            <Text style={{ fontSize: 11, color: theme.textSecondary, fontFamily: "Outfit_500Medium", marginTop: 8, letterSpacing: 3, textTransform: "uppercase" }}>
               Grow together
             </Text>
           </Animated.View>
