@@ -1,9 +1,11 @@
 import "./global.css";
-import React, { useState } from "react";
-import { View, Text, ActivityIndicator, LogBox } from "react-native";
+import React, { useState, useRef, useEffect } from "react";
+import { View, Text, ActivityIndicator, LogBox, PanResponder, Animated, StyleSheet, Platform } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useFonts, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold, Outfit_700Bold } from "@expo-google-fonts/outfit";
 import { ThemeProvider, useTheme } from "./src/contexts/ThemeContext";
 import { TasksProvider } from "./src/contexts/TasksContext";
+import { ToastProvider } from "./src/contexts/ToastContext";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { configureReanimatedLogger, ReanimatedLogLevel } from "react-native-reanimated";
@@ -74,24 +76,95 @@ const originalTextRender = (Text as any).render;
 };
 
 function AppContent() {
-  const { theme } = useTheme();
+  const { theme, isThemeLoading } = useTheme();
   const [activeTab, setActiveTab] = useState<TabSlug>("home");
   const [showProfile, setShowProfile] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
+
+  // Splash Screen Fade & Scale Animations
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const logoScale = useRef(new Animated.Value(0.4)).current;
+  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    // 1. Animate Logo Fade In and Scale Up
+    Animated.parallel([
+      Animated.spring(logoScale, {
+        toValue: 1,
+        tension: 18,
+        friction: 6,
+        useNativeDriver: true,
+      }),
+      Animated.timing(logoOpacity, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  useEffect(() => {
+    if (!isThemeLoading) {
+      // 2. Once theme has loaded, wait 800ms for user to enjoy animation, then fade out the entire splash screen
+      setTimeout(() => {
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 350,
+          useNativeDriver: true,
+        }).start(() => {
+          setShowSplash(false);
+        });
+      }, 800);
+    }
+  }, [isThemeLoading]);
+
+  // Use refs to avoid stale closures in PanResponder callbacks
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
+  const isFullScreenRef = useRef(isFullScreen);
+  isFullScreenRef.current = isFullScreen;
+  const isSwipingTaskRef = useRef(false);
+
+  const TABS_ORDER: TabSlug[] = ["home", "focus", "calendar", "insights"];
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        if (isFullScreenRef.current) return false;
+        if (isSwipingTaskRef.current) return false;
+        return Math.abs(gestureState.dx) > 40 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 3.5;
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        const index = TABS_ORDER.indexOf(activeTabRef.current);
+        if (gestureState.dx > 60) {
+          // Swipe Right -> Go Previous
+          if (index > 0) {
+            setActiveTab(TABS_ORDER[index - 1]);
+          }
+        } else if (gestureState.dx < -60) {
+          // Swipe Left -> Go Next
+          if (index < TABS_ORDER.length - 1) {
+            setActiveTab(TABS_ORDER[index + 1]);
+          }
+        }
+      }
+    })
+  ).current;
 
   // Render screens conditionally based on navigation state
   if (showProfile) {
     return <ProfileScreen onBack={() => setShowProfile(false)} />;
   }
 
-  const renderScreen = () => {
+  const renderScreen = (onSwipeTask: (swiping: boolean) => void) => {
     switch (activeTab) {
       case "home":
-        return <HomeScreen onNavigateToProfile={() => setShowProfile(true)} />;
+        return <HomeScreen onNavigateToProfile={() => setShowProfile(true)} onSwipeTask={onSwipeTask} onModalToggle={setIsFullScreen} />;
       case "focus":
         return <FocusScreen onFullScreenToggle={setIsFullScreen} />;
       case "calendar":
-        return <CalendarScreen />;
+        return <CalendarScreen onModalToggle={setIsFullScreen} />;
       case "insights":
         return <InsightsScreen />;
       default:
@@ -103,7 +176,11 @@ function AppContent() {
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={["top"]}>
       <StatusBar style={theme.statusBar} />
       
-      {renderScreen()}
+      <View style={{ flex: 1 }} {...panResponder.panHandlers}>
+        {renderScreen((swiping) => {
+          isSwipingTaskRef.current = swiping;
+        })}
+      </View>
 
       {/* Persistent Floating Bottom Dock Navigation */}
       {!isFullScreen && (
@@ -111,6 +188,64 @@ function AppContent() {
           activeTab={activeTab} 
           onTabSelect={(tab) => setActiveTab(tab)} 
         />
+      )}
+
+      {/* Custom Premium Animated Splash Screen Overlay */}
+      {showSplash && (
+        <Animated.View 
+          pointerEvents="none"
+          style={{ 
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: "#FAF8F3", 
+            justifyContent: "center", 
+            alignItems: "center", 
+            opacity: fadeAnim,
+            zIndex: 9999
+          }}
+        >
+          {/* Background Watermark Leaves */}
+          <View style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0, overflow: "hidden" }} pointerEvents="none">
+            <Ionicons 
+              name="leaf" 
+              size={350} 
+              color="#834063" 
+              style={{ 
+                position: "absolute", 
+                left: -100, 
+                top: -50, 
+                opacity: 0.08, 
+                transform: [{ rotate: "-35deg" }] 
+              }} 
+            />
+            <Ionicons 
+              name="leaf" 
+              size={450} 
+              color="#834063" 
+              style={{ 
+                position: "absolute", 
+                right: -150, 
+                bottom: 50, 
+                opacity: 0.08, 
+                transform: [{ rotate: "45deg" }] 
+              }} 
+            />
+          </View>
+
+          {/* Animated Center Logo */}
+          <Animated.View style={{ transform: [{ scale: logoScale }], opacity: logoOpacity, alignItems: "center" }}>
+            <Ionicons name="leaf" size={100} color="#834063" />
+            <Text style={{ fontSize: 38, color: "#834063", fontFamily: Platform.OS === "ios" ? "Georgia" : "serif", marginTop: 16, fontWeight: "bold" }}>
+              bloom
+            </Text>
+            <Text style={{ fontSize: 11, color: "#8A707F", fontFamily: "Outfit_500Medium", marginTop: 8, letterSpacing: 3, textTransform: "uppercase" }}>
+              Grow together
+            </Text>
+          </Animated.View>
+        </Animated.View>
       )}
     </SafeAreaView>
   );
@@ -138,9 +273,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <TasksProvider>
-          <AppContent />
-        </TasksProvider>
+        <ToastProvider>
+          <TasksProvider>
+            <AppContent />
+          </TasksProvider>
+        </ToastProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );
