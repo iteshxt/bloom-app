@@ -42,6 +42,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
   const [leetcodeUsername, setLeetcodeUsername] = useState("jonathan_dev");
   const [avatarUrl, setAvatarUrl] = useState("https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop");
   const [isEditing, setIsEditing] = useState(false);
+  const [dailyGoal, setDailyGoal] = useState(4);
 
   // Temporary inputs during edit mode
   const [tempName, setTempName] = useState(displayName);
@@ -297,26 +298,56 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
                 LeetCode: @{leetcodeUsername}
               </Text>
 
-              {/* Streak Freeze Token Status */}
+              {/* Stats highlights */}
+              <View className="flex-row justify-between w-full mb-5">
+                <View style={{ backgroundColor: theme.background, flex: 1, marginRight: 6, paddingVertical: 12, borderRadius: theme.borderRadiusButton, alignItems: "center" }}>
+                  <Ionicons name="flame" size={18} color="#FF6D00" />
+                  <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 15, marginTop: 4 }}>{currentStreak}d</Text>
+                  <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 9 }}>Streak</Text>
+                </View>
+                <View style={{ backgroundColor: theme.background, flex: 1, marginHorizontal: 3, paddingVertical: 12, borderRadius: theme.borderRadiusButton, alignItems: "center" }}>
+                  <Ionicons name="time" size={18} color={theme.primary} />
+                  <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 15, marginTop: 4 }}>107.5h</Text>
+                  <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 9 }}>Focused</Text>
+                </View>
+                <View style={{ backgroundColor: theme.background, flex: 1, marginLeft: 6, paddingVertical: 12, borderRadius: theme.borderRadiusButton, alignItems: "center" }}>
+                  <Ionicons name="checkmark-circle" size={18} color={theme.accent} />
+                  <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 15, marginTop: 4 }}>254</Text>
+                  <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 9 }}>Tasks</Text>
+                </View>
+              </View>
+
+              {/* Streak Freeze Slots */}
               <View 
                 style={{ backgroundColor: theme.backgroundSecondary }} 
-                className="rounded-2xl px-4 py-3 flex-row items-center w-full justify-between"
+                className="rounded-2xl p-4 w-full"
               >
-                <View className="flex-row items-center">
-                  <Ionicons name="snow" size={20} color="#0284C7" style={{ marginRight: 8 }} />
-                  <View>
-                    <Text style={{ color: theme.text, fontFamily: getFontFamily("Medium") }} className="text-sm">
-                      Streak Freeze
-                    </Text>
-                    <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular") }} className="text-xs">
-                      Auto-preserves daily misses
-                    </Text>
+                <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 13, marginBottom: 8 }}>
+                  Streak Protection
+                </Text>
+                <View className="flex-row justify-between items-center">
+                  <View className="flex-row">
+                    {[1, 2, 3].map((slot) => (
+                      <View 
+                        key={slot} 
+                        style={{ 
+                          backgroundColor: slot <= 3 ? `${theme.primary}20` : theme.background, 
+                          borderColor: slot <= 3 ? theme.primary : theme.border, 
+                          borderWidth: 1 
+                        }} 
+                        className="w-10 h-10 rounded-full justify-center items-center mr-2"
+                      >
+                        <Ionicons name="snow" size={18} color={slot <= 3 ? theme.primary : theme.textSecondary} />
+                      </View>
+                    ))}
                   </View>
-                </View>
-                <View style={{ backgroundColor: "#E0F2FE" }} className="rounded-full px-3 py-1">
-                  <Text style={{ color: "#0284C7", fontFamily: getFontFamily("Bold") }} className="text-sm">
-                    3 Left
-                  </Text>
+                  <TouchableOpacity 
+                    onPress={() => showToast("Your streak auto-freezes when missing a daily task!", "success")}
+                    style={{ borderColor: theme.primary, borderWidth: 1 }}
+                    className="px-3.5 py-1.5 rounded-full"
+                  >
+                    <Text style={{ color: theme.primary, fontFamily: getFontFamily("Bold"), fontSize: 10 }}>3 Active</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -333,38 +364,51 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
           </Text>
 
           {isPartnerConnected ? (
-            <View>
-              <View className="flex-row items-center mb-4">
-                <Image 
-                  source={{ uri: AVATARS.Sarah }} 
-                  className="w-12 h-12 rounded-full mr-3"
-                />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: theme.text, fontFamily: getFontFamily("Medium") }} className="text-base">
-                    Sarah
-                  </Text>
-                  <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular") }} className="text-xs">
-                    Partner Active Since July 2026
-                  </Text>
+            <View className="items-center py-2">
+              <View className="flex-row items-center justify-center mb-4">
+                {/* User Avatar */}
+                <View className="relative">
+                  <Image source={{ uri: avatarUrl }} className="w-16 h-16 rounded-full border-2 border-white shadow-sm" style={{ borderRadius: currentTheme === "mario" ? 0 : 32 }} />
+                  <View style={{ backgroundColor: theme.primary }} className="absolute bottom-0 right-0 w-5 h-5 rounded-full justify-center items-center border border-white">
+                    <Ionicons name="person" size={10} color={theme.primaryContrast} />
+                  </View>
                 </View>
-                <View style={{ backgroundColor: "#DCFCE7" }} className="rounded-full px-3 py-1">
-                  <Text style={{ color: "#15803D", fontFamily: getFontFamily("Bold") }} className="text-xs">
-                    ● Active
-                  </Text>
+                
+                {/* Connecting Line and Link Badge */}
+                <View className="items-center px-4 relative justify-center">
+                  <View style={{ height: 2, width: 60, borderStyle: "dashed", borderWidth: 1, borderColor: theme.accent, opacity: 0.5 }} />
+                  <View style={{ backgroundColor: theme.cardBg, borderColor: theme.border, borderWidth: theme.borderWidth }} className="absolute w-8 h-8 rounded-full justify-center items-center shadow-sm">
+                    <Ionicons name="swap-horizontal" size={14} color={theme.accent} />
+                  </View>
+                </View>
+
+                {/* Partner Avatar */}
+                <View className="relative">
+                  <Image source={{ uri: AVATARS.Sarah }} className="w-16 h-16 rounded-full border-2 border-white shadow-sm" style={{ borderRadius: currentTheme === "mario" ? 0 : 32 }} />
+                  <View style={{ backgroundColor: theme.accent }} className="absolute bottom-0 right-0 w-5 h-5 rounded-full justify-center items-center border border-white">
+                    <Ionicons name="people" size={10} color="#FFFFFF" />
+                  </View>
                 </View>
               </View>
 
-              <View className="flex-row items-center justify-between border-t pt-4" style={{ borderTopColor: theme.border }}>
-                <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular") }} className="text-xs">
-                  Sync ID: bloom-x93a
+              <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 14 }}>
+                Synced with Sarah
+              </Text>
+              <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular"), fontSize: 11, marginTop: 4, marginBottom: 16 }}>
+                Co-working active since July 2026
+              </Text>
+
+              <View className="flex-row justify-between items-center w-full border-t pt-4" style={{ borderTopColor: theme.border }}>
+                <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular"), fontSize: 11 }}>
+                  ID: bloom-x93a
                 </Text>
                 <TouchableOpacity 
                   onPress={handleDisconnectPartner}
-                  style={{ backgroundColor: `${theme.warning}15`, paddingHorizontal: 12, paddingVertical: 6, ...buttonStyle }}
+                  style={{ backgroundColor: `${theme.warning}15`, paddingHorizontal: 16, paddingVertical: 8, ...buttonStyle }}
                   className="rounded-full"
                 >
-                  <Text style={{ color: theme.warning, fontFamily: getFontFamily("Bold"), fontSize: 10 }}>
-                    Disconnect
+                  <Text style={{ color: theme.warning, fontFamily: getFontFamily("Bold"), fontSize: 11 }}>
+                    Disconnect Partner
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -431,7 +475,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
             style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular") }} 
             className="text-xs mb-4 px-2"
           >
-            Unlocked automatically via weekly milestones (5-day intervals).
+            Switch styles dynamically. Unlocked via streak milestones.
           </Text>
 
           <ScrollView 
@@ -450,62 +494,161 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
                   disabled={!isUnlocked}
                   onPress={() => setTheme(slug)}
                   style={{
-                    backgroundColor: isActive ? theme.primary : isUnlocked ? theme.cardBg : theme.backgroundSecondary,
+                    backgroundColor: isActive ? theme.primary : isUnlocked ? theme.cardBg : `${theme.border}10`,
                     borderColor: isActive ? theme.primaryDark : theme.border,
                     borderWidth: theme.borderWidth,
-                    borderRadius: theme.borderRadiusButton,
-                    opacity: isUnlocked ? 1 : 0.6,
-                    paddingVertical: 8,
+                    borderRadius: theme.borderRadiusCard,
+                    opacity: isUnlocked ? 1 : 0.65,
+                    paddingVertical: 12,
                     paddingHorizontal: 16,
-                    marginRight: 8,
-                    flexDirection: "row",
-                    alignItems: "center"
+                    marginRight: 10,
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    width: 140,
+                    height: 125,
+                    shadowColor: isActive ? theme.primary : theme.text,
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: isActive ? 0.08 : 0.02,
+                    shadowRadius: 6,
+                    elevation: 1
                   }}
                 >
-                  <View 
-                    style={{ 
-                      width: 10, 
-                      height: 10, 
-                      borderRadius: 5, 
-                      backgroundColor: item.colors.primary, 
-                      marginRight: 6,
-                      borderWidth: 1,
-                      borderColor: "rgba(0, 0, 0, 0.15)"
-                    }} 
-                  />
-                  
+                  {/* 3 Color Preview Dots */}
+                  <View className="flex-row justify-center mb-2.5">
+                    <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: item.colors.primary, marginRight: 4, borderWidth: 1, borderColor: "rgba(0,0,0,0.1)" }} />
+                    <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: item.colors.background, marginRight: 4, borderWidth: 1, borderColor: "rgba(0,0,0,0.1)" }} />
+                    <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: item.colors.backgroundSecondary, borderWidth: 1, borderColor: "rgba(0,0,0,0.1)" }} />
+                  </View>
+
                   <Text 
                     style={{ 
                       color: isActive ? theme.primaryContrast : theme.text,
-                      fontFamily: getFontFamily("Medium"),
-                      fontSize: 13
+                      fontFamily: getFontFamily("Bold"),
+                      fontSize: 12,
+                      textAlign: "center"
                     }}
+                    numberOfLines={1}
                   >
-                    {item.name} ({item.milestone})
+                    {item.name}
                   </Text>
-                  
-                  {!isUnlocked ? (
-                    <Ionicons 
-                      name="lock-closed" 
-                      size={11} 
-                      color={theme.textSecondary} 
-                      style={{ marginLeft: 6 }} 
-                    />
-                  ) : isActive ? (
-                    <Ionicons 
-                      name="checkmark" 
-                      size={12} 
-                      color={theme.primaryContrast} 
-                      style={{ marginLeft: 6 }} 
-                    />
-                  ) : null}
+
+                  <View className="flex-row items-center mt-1">
+                    {isUnlocked ? (
+                      isActive ? (
+                        <View style={{ backgroundColor: "rgba(255,255,255,0.2)", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }} className="flex-row items-center">
+                          <Ionicons name="checkmark-circle" size={12} color={theme.primaryContrast} />
+                          <Text style={{ color: theme.primaryContrast, fontFamily: getFontFamily("Bold"), fontSize: 9, marginLeft: 3 }}>Active</Text>
+                        </View>
+                      ) : (
+                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 10 }}>Unlocked</Text>
+                      )
+                    ) : (
+                      <View className="flex-row items-center">
+                        <Ionicons name="lock-closed" size={11} color={theme.textSecondary} />
+                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 9, marginLeft: 3 }}>{item.milestone}</Text>
+                      </View>
+                    )}
+                  </View>
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
         </View>
 
-        {/* Simulation Sandbox Card */}
+        {/* Daily Focus Goal */}
+        <View style={cardStyle}>
+          <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold") }} className="text-lg mb-2">
+            Daily Focus Goal
+          </Text>
+          <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular"), fontSize: 11, marginBottom: 12 }}>
+            Set your target daily focus duration.
+          </Text>
+          <View className="flex-row justify-between">
+            {[1, 2, 4, 6].map((hours) => {
+              const isGoal = dailyGoal === hours;
+              return (
+                <TouchableOpacity 
+                  key={hours} 
+                  onPress={() => {
+                    setDailyGoal(hours);
+                    showToast(`Daily focus target set to ${hours} hours!`, "success");
+                  }}
+                  style={{ 
+                    backgroundColor: isGoal ? theme.primary : theme.background,
+                    borderColor: isGoal ? theme.primaryDark : theme.border,
+                    borderWidth: 1,
+                    borderRadius: theme.borderRadiusButton
+                  }}
+                  className="flex-1 py-2 mx-1 items-center justify-center"
+                >
+                  <Text style={{ color: isGoal ? theme.primaryContrast : theme.text, fontFamily: getFontFamily("Bold"), fontSize: 12 }}>
+                    {hours}h
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Connected Services */}
+        <View style={cardStyle}>
+          <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold") }} className="text-lg mb-3">
+            Connected Services
+          </Text>
+          <View>
+            {/* LeetCode Row */}
+            <View className="flex-row items-center justify-between py-3">
+              <View className="flex-row items-center">
+                <Ionicons name="code-slash" size={18} color="#E7A43F" style={{ marginRight: 10 }} />
+                <View>
+                  <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 13 }}>LeetCode Sync</Text>
+                  <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular"), fontSize: 10 }}>@{leetcodeUsername}</Text>
+                </View>
+              </View>
+              <View style={{ backgroundColor: `${theme.accent}15` }} className="px-2.5 py-1 rounded-full">
+                <Text style={{ color: theme.primary, fontFamily: getFontFamily("Bold"), fontSize: 9 }}>Connected</Text>
+              </View>
+            </View>
+
+            {/* GitHub Row */}
+            <View className="flex-row items-center justify-between py-3 border-t" style={{ borderTopColor: theme.border }}>
+              <View className="flex-row items-center">
+                <Ionicons name="logo-github" size={18} color={theme.text} style={{ marginRight: 10 }} />
+                <View>
+                  <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 13 }}>GitHub Commit Sync</Text>
+                  <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular"), fontSize: 10 }}>Verify coding tasks via commits</Text>
+                </View>
+              </View>
+              <TouchableOpacity 
+                onPress={() => showToast("GitHub linked successfully!", "success")}
+                style={{ borderColor: theme.border, borderWidth: 1, borderRadius: theme.borderRadiusButton }} 
+                className="px-2.5 py-1"
+              >
+                <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 9 }}>Link</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Spotify Row */}
+            <View className="flex-row items-center justify-between py-3 border-t" style={{ borderTopColor: theme.border }}>
+              <View className="flex-row items-center">
+                <Ionicons name="musical-notes" size={18} color="#1DB954" style={{ marginRight: 10 }} />
+                <View>
+                  <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 13 }}>Spotify Session Play</Text>
+                  <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular"), fontSize: 10 }}>Sync background tracks</Text>
+                </View>
+              </View>
+              <TouchableOpacity 
+                onPress={() => showToast("Spotify linked successfully!", "success")}
+                style={{ borderColor: theme.border, borderWidth: 1, borderRadius: theme.borderRadiusButton }} 
+                className="px-2.5 py-1"
+              >
+                <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 9 }}>Link</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        {/* Streak Sandbox Simulator */}
         <View style={cardStyle}>
           <Text 
             style={{ color: theme.text, fontFamily: getFontFamily("Bold") }} 
@@ -576,7 +719,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
             </Text>
           </TouchableOpacity>
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );
