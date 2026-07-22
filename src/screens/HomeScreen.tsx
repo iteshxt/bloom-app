@@ -577,8 +577,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
           {/* Clean Premium Streak Badge */}
           <TouchableOpacity 
             onPress={onNavigateToProfile}
-            className="flex-row items-center justify-center rounded-2xl px-4 py-2"
-            style={{ backgroundColor: theme.backgroundSecondary }}
+            className="flex-row items-center justify-center px-4 py-2"
+            style={{ 
+              backgroundColor: `${theme.primary}20`,
+              borderWidth: 1,
+              borderColor: `${theme.primary}40`,
+              borderRadius: theme.borderRadiusCard,
+            }}
           >
             <View className="items-center">
               <View className="flex-row items-center">

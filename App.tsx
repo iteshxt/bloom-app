@@ -22,6 +22,7 @@ import { FocusScreen } from "./src/screens/FocusScreen";
 import { CalendarScreen } from "./src/screens/CalendarScreen";
 import { InsightsScreen } from "./src/screens/InsightsScreen";
 import { ProfileScreen } from "./src/screens/ProfileScreen";
+import { SignInScreen } from "./src/screens/SignInScreen";
 import { BottomDock, TabSlug } from "./src/components/BottomDock";
 
 // Dynamic text component override to alias font families app-wide
@@ -90,6 +91,7 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<TabSlug>("home");
   const [showProfile, setShowProfile] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState(false);
 
   // Splash Screen Fade & Scale Animations
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -135,11 +137,14 @@ function AppContent() {
   }, [isAppLoading, minTimePassed]);
 
   // Render screens conditionally based on navigation state
-  if (showProfile) {
-    return <ProfileScreen onBack={() => setShowProfile(false)} />;
-  }
-
   const renderScreen = () => {
+    if (!isSignedIn) {
+      return <SignInScreen onSignIn={() => setIsSignedIn(true)} />;
+    }
+    
+    if (showProfile) {
+      return <ProfileScreen onBack={() => setShowProfile(false)} />;
+    }
     switch (activeTab) {
       case "home":
         return <HomeScreen onNavigateToProfile={() => setShowProfile(true)} onModalToggle={setIsFullScreen} />;
@@ -163,7 +168,7 @@ function AppContent() {
       </View>
 
       {/* Persistent Floating Bottom Dock Navigation */}
-      {!isFullScreen && (
+      {!isFullScreen && isSignedIn && !showProfile && (
         <BottomDock 
           activeTab={activeTab} 
           onTabSelect={(tab) => setActiveTab(tab)} 
