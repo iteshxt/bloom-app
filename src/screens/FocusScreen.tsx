@@ -35,16 +35,25 @@ interface Preset {
   focus: number;
   break: number;
   color: string;
+  bgColor: string;
 }
 
 export const FocusScreen: React.FC<FocusScreenProps> = ({ onFullScreenToggle }) => {
   const { theme, currentTheme } = useTheme();
   const { showToast } = useToast();
 
+  const getFontFamily = (weight: "Regular" | "Medium" | "Bold") => {
+    switch (weight) {
+      case "Regular": return theme.fontFamilyRegular;
+      case "Medium": return theme.fontFamilyMedium;
+      case "Bold": return theme.fontFamilyBold;
+    }
+  };
+
   const PRESETS: Preset[] = [
-    { label: "15 min", focus: 15 * 60, break: 3 * 60, color: theme.accent },
-    { label: "25 min", focus: 25 * 60, break: 5 * 60, color: theme.primaryDark },
-    { label: "50 min", focus: 50 * 60, break: 10 * 60, color: "#3B82F6" },
+    { label: "15 min", focus: 15 * 60, break: 3 * 60, color: "#137333", bgColor: "#E6F4EA" },
+    { label: "25 min", focus: 25 * 60, break: 5 * 60, color: "#1A73E8", bgColor: "#E8F0FE" },
+    { label: "50 min", focus: 50 * 60, break: 10 * 60, color: "#D93025", bgColor: "#FCE8E6" },
   ];
 
   // Timer State
@@ -66,6 +75,7 @@ export const FocusScreen: React.FC<FocusScreenProps> = ({ onFullScreenToggle }) 
 
   const breakColor = theme.statusBar === "light" ? "#4B5563" : "#9CA3AF";
   const currentColor = mode === "Focus" ? PRESETS[activePresetIndex].color : breakColor;
+  const currentBgColor = mode === "Focus" ? PRESETS[activePresetIndex].bgColor : breakColor;
 
   // Handle Timer Ticking (Robust drift-free implementation)
   useEffect(() => {
@@ -259,13 +269,13 @@ export const FocusScreen: React.FC<FocusScreenProps> = ({ onFullScreenToggle }) 
         pointerEvents={isRunning ? "box-none" : "auto"}
       >
         <Animated.View style={[{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }, fadeOutStyle]} pointerEvents={isRunning ? "none" : "auto"}>
-          <Text style={{ color: theme.text, fontFamily: "Outfit_700Bold", fontSize: 24 }}>Focus</Text>
+          <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 24 }}>Focus</Text>
         </Animated.View>
 
         <Animated.View style={[{ alignSelf: "flex-start", backgroundColor: theme.cardBg, borderRadius: theme.borderRadiusButton, borderWidth: theme.borderWidth, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 6, flexDirection: "row", alignItems: "center", marginBottom: 24 }, fadeOutStyle]}>
           <Ionicons name="flame" size={14} color="#FF6D00" />
-          <Text style={{ fontFamily: "Outfit_500Medium", color: theme.textSecondary, fontSize: 13, marginLeft: 6 }}>
-            Today: <Text style={{ fontFamily: "Outfit_700Bold", color: theme.text }}>{Math.floor(totalFocusedMinutes / 60)}h {totalFocusedMinutes % 60}m</Text> focused • <Text style={{ fontFamily: "Outfit_700Bold", color: theme.text }}>{completedSessions}</Text> {completedSessions === 1 ? "session" : "sessions"}
+          <Text style={{ fontFamily: getFontFamily("Medium"), color: theme.textSecondary, fontSize: 13, marginLeft: 6 }}>
+            Today: <Text style={{ fontFamily: getFontFamily("Bold"), color: theme.text }}>{Math.floor(totalFocusedMinutes / 60)}h {totalFocusedMinutes % 60}m</Text> focused • <Text style={{ fontFamily: getFontFamily("Bold"), color: theme.text }}>{completedSessions}</Text> {completedSessions === 1 ? "session" : "sessions"}
           </Text>
         </Animated.View>
 
@@ -290,7 +300,7 @@ export const FocusScreen: React.FC<FocusScreenProps> = ({ onFullScreenToggle }) 
                 bottom: 0,
                 left: activePresetIndex === 0 ? "0%" : (activePresetIndex === 1 ? "33.33%" : "66.66%"),
                 width: "33.33%",
-                backgroundColor: currentColor,
+                backgroundColor: currentBgColor,
                 borderRadius: theme.borderRadiusButton,
               }}
               layout={LinearTransition.duration(200)}
@@ -307,8 +317,8 @@ export const FocusScreen: React.FC<FocusScreenProps> = ({ onFullScreenToggle }) 
                 activeOpacity={0.8}
               >
                 <Text style={{
-                  color: isSelected ? "#FFFFFF" : theme.textSecondary,
-                  fontFamily: "Outfit_600SemiBold",
+                  color: isSelected ? preset.color : theme.textSecondary,
+                  fontFamily: getFontFamily("Bold"),
                   fontSize: 14
                 }}>
                   {preset.label}
@@ -348,7 +358,7 @@ export const FocusScreen: React.FC<FocusScreenProps> = ({ onFullScreenToggle }) 
             <View style={{ alignItems: "center" }}>
               <Text style={{
                 color: isRunning ? "#FFFFFF" : theme.text,
-                fontFamily: "Outfit_700Bold",
+                fontFamily: getFontFamily("Bold"),
                 fontSize: 64,
                 letterSpacing: 2,
                 includeFontPadding: false
@@ -357,7 +367,7 @@ export const FocusScreen: React.FC<FocusScreenProps> = ({ onFullScreenToggle }) 
               </Text>
               <Text style={{
                 color: isRunning ? "rgba(255,255,255,0.8)" : theme.textSecondary,
-                fontFamily: "Outfit_500Medium",
+                fontFamily: getFontFamily("Medium"),
                 fontSize: 16,
                 marginTop: 4,
                 textTransform: "uppercase",
@@ -441,7 +451,7 @@ export const FocusScreen: React.FC<FocusScreenProps> = ({ onFullScreenToggle }) 
         </View>
 
         <Animated.View style={[{ marginTop: 40 }, fadeOutStyle]} pointerEvents={isRunning ? "none" : "auto"}>
-          <Text style={{ color: theme.text, fontFamily: "Outfit_700Bold", fontSize: 18, marginBottom: 16 }}>
+          <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 18, marginBottom: 16 }}>
             Focus Together (Live)
           </Text>
           <View style={{ backgroundColor: theme.cardBg, borderRadius: theme.borderRadiusCard, borderWidth: theme.borderWidth, borderColor: theme.border, padding: 20 }}>
@@ -451,8 +461,8 @@ export const FocusScreen: React.FC<FocusScreenProps> = ({ onFullScreenToggle }) 
                 <Feather name="monitor" size={20} color={theme.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: theme.text, fontFamily: "Outfit_600SemiBold", fontSize: 16 }}>Sarah is focusing</Text>
-                <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_400Regular", fontSize: 14 }}>12:45 remaining</Text>
+                <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 16 }}>Sarah is focusing</Text>
+                <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular"), fontSize: 14 }}>12:45 remaining</Text>
               </View>
               <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.background, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: theme.border }}>
                 <Feather name="heart" size={16} color={theme.textSecondary} />
@@ -462,12 +472,12 @@ export const FocusScreen: React.FC<FocusScreenProps> = ({ onFullScreenToggle }) 
             {/* Simulated Chat Feed */}
             <View style={{ backgroundColor: theme.background, borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <View style={{ flexDirection: "row", marginBottom: 12 }}>
-                <Text style={{ color: theme.primary, fontFamily: "Outfit_700Bold", fontSize: 13, marginRight: 8 }}>You</Text>
-                <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_400Regular", fontSize: 13 }}>Let's crush this session!</Text>
+                <Text style={{ color: theme.primary, fontFamily: getFontFamily("Bold"), fontSize: 13, marginRight: 8 }}>You</Text>
+                <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular"), fontSize: 13 }}>Let's crush this session!</Text>
               </View>
               <View style={{ flexDirection: "row" }}>
-                <Text style={{ color: theme.accent, fontFamily: "Outfit_700Bold", fontSize: 13, marginRight: 8 }}>Sarah</Text>
-                <Text style={{ color: theme.textSecondary, fontFamily: "Outfit_400Regular", fontSize: 13 }}>Already on it</Text>
+                <Text style={{ color: theme.accent, fontFamily: getFontFamily("Bold"), fontSize: 13, marginRight: 8 }}>Sarah</Text>
+                <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular"), fontSize: 13 }}>Already on it</Text>
               </View>
             </View>
 
@@ -485,7 +495,7 @@ export const FocusScreen: React.FC<FocusScreenProps> = ({ onFullScreenToggle }) 
                   paddingHorizontal: 16,
                   paddingVertical: 12,
                   color: theme.text,
-                  fontFamily: "Outfit_400Regular",
+                  fontFamily: getFontFamily("Regular"),
                   fontSize: 14,
                   borderWidth: theme.borderWidth,
                   borderColor: theme.border
