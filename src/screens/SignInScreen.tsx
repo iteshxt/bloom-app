@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -13,27 +13,19 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSignIn }) => {
   const { theme } = useTheme();
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background }}>
-      {/* 2/3 Top Crescent Section */}
+    <View style={{ flex: 1, backgroundColor: theme.primary }}>
+      {/* 55% Top Section */}
       <View 
         style={{ 
-          height: height * 0.62, 
+          height: height * 0.55, 
           backgroundColor: theme.primary, 
           justifyContent: 'center', 
           alignItems: 'center',
           position: 'relative',
-          overflow: 'visible', // Let the crescent curve spill out
         }}
       >
-        <StatusBar barStyle="light-content" />
-
-        {/* Background Watermark/Art */}
-        <View style={StyleSheet.absoluteFill} className="items-center justify-center opacity-10">
-          <Ionicons name="flower-outline" size={width * 1.0} color={theme.primaryContrast || '#FFFFFF'} style={{ transform: [{ rotate: '15deg' }] }} />
-        </View>
-
         {/* Logo and Branding Container */}
-        <View className="items-center justify-center z-10" style={{ marginTop: -40 }}>
+        <View className="items-center justify-center z-10" style={{ marginTop: -30 }}>
           <View style={{ 
             backgroundColor: 'rgba(255, 255, 255, 0.2)', 
             width: 86, 
@@ -45,7 +37,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSignIn }) => {
             borderWidth: 1,
             borderColor: 'rgba(255, 255, 255, 0.3)'
           }}>
-            <Ionicons name="leaf" size={44} color={theme.primaryContrast || '#FFFFFF'} />
+            <Ionicons name={theme.watermarkIcon as any || "leaf"} size={44} color={theme.primaryContrast || '#FFFFFF'} />
           </View>
           
           <Text style={{ 
@@ -68,30 +60,31 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSignIn }) => {
           </Text>
         </View>
 
-        {/* Crescent downward bulge */}
+        {/* Upward dome bulge (Reverse half circle) connecting to bottom */}
         <View 
           style={{
             position: 'absolute',
-            bottom: -width * 0.3,
-            width: width * 1.6,
-            height: width * 0.6,
-            borderRadius: width * 0.8,
-            backgroundColor: theme.primary,
-            transform: [{ scaleX: 1.15 }],
+            bottom: 0,
+            width: width * 1.5,
+            height: width * 0.5, // The height of the dome
+            borderTopLeftRadius: width * 0.75,
+            borderTopRightRadius: width * 0.75,
+            backgroundColor: theme.background,
+            alignSelf: 'center',
             zIndex: 1,
           }}
         />
       </View>
 
-      {/* 1/3 Bottom Welcome & Action Section */}
+      {/* 45% Bottom Welcome & Action Section */}
       <View 
         style={{ 
           flex: 1,
           backgroundColor: theme.background,
           alignItems: 'center', 
-          justifyContent: 'flex-end',
+          justifyContent: 'flex-start',
           paddingHorizontal: 32,
-          paddingBottom: height * 0.08,
+          paddingTop: 10, // A bit of padding since the dome gives space above
           zIndex: 10,
         }}
       >
@@ -110,7 +103,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSignIn }) => {
           fontFamily: "Outfit_500Medium", 
           fontSize: 14, 
           textAlign: 'center', 
-          marginBottom: 36,
+          marginBottom: 40,
           lineHeight: 20,
           paddingHorizontal: 12,
         }}>

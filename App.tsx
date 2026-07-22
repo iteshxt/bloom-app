@@ -160,8 +160,11 @@ function AppContent() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={["top"]}>
-      <StatusBar style={theme.statusBar} />
+    <SafeAreaView 
+      style={{ flex: 1, backgroundColor: !isSignedIn ? theme.primary : theme.background }} 
+      edges={["top"]}
+    >
+      <StatusBar style={!isSignedIn ? "light" : theme.statusBar} />
       
       <View key={currentTheme} style={{ flex: 1 }}>
         {renderScreen()}
