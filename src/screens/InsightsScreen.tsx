@@ -6,13 +6,20 @@ import {
   TouchableOpacity, 
   Dimensions, 
   Image,
-  Platform
+  Platform,
+  Modal,
+  TouchableWithoutFeedback,
+  StyleSheet
 } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
 import { useTasks, Task } from "../contexts/TasksContext";
 import { Ionicons, Feather, MaterialIcons } from "@expo/vector-icons";
 import Animated, { 
-  LinearTransition 
+  LinearTransition,
+  FadeIn,
+  FadeOut,
+  SlideInDown,
+  SlideOutDown
 } from "react-native-reanimated";
 
 // Dynamic streak tracker calculator
@@ -49,6 +56,7 @@ export const InsightsScreen: React.FC = () => {
 
   // "habits" for Github contribution heatmaps, "focus" for comparative graphs & mood logs
   const [activeView, setActiveView] = useState<"habits" | "focus">("habits");
+  const [selectedHabit, setSelectedHabit] = useState<Task | null>(null);
 
   // Focus Statistics Mock Database (Last 7 days: Mon - Sun)
   const daysOfWeek = ["M", "T", "W", "T", "F", "S", "S"];
@@ -212,12 +220,14 @@ export const InsightsScreen: React.FC = () => {
                 const streak = getStreak(habit.contributions);
 
                 return (
-                  <View 
+                  <TouchableOpacity 
                     key={habit.id}
                     style={cardStyle}
+                    activeOpacity={0.9}
+                    onPress={() => setSelectedHabit(habit)}
                   >
                     {/* Habit Card Header */}
-                    <View className="flex-row items-center justify-between mb-4">
+                    <View className="flex-row items-center justify-between mb-2">
                       <View>
                         <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 18 }}>
                           {habit.name}
@@ -233,97 +243,71 @@ export const InsightsScreen: React.FC = () => {
                       </View>
                     </View>
 
-                    {/* Dynamic Heatmap Grid (13 weeks x 7 days) */}
-                    <View className="mb-4 bg-white p-4 rounded-2xl border" style={{ borderColor: theme.border, alignItems: "center" }}>
-                      <View className="flex-row items-center">
-                        {/* Day Labels Column on Left */}
-                        <View className="justify-between pr-2.5" style={{ height: 95, paddingVertical: 2 }}>
-                          <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 8 }}>Mon</Text>
-                          <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 8 }}>Wed</Text>
-                          <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 8 }}>Fri</Text>
-                        </View>
-                        
-                        <View>
-                          {/* Months Top Header Row */}
-                          <View className="flex-row justify-between mb-1.5 px-0.5" style={{ width: 13 * 15 }}>
-                            <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 9 }}>May</Text>
-                            <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 9 }}>Jun</Text>
-                            <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 9 }}>Jul</Text>
-                          </View>
-
-                          <View style={{ flexDirection: "row" }}>
-                            {gridColumns.map((col, colIdx) => (
-                              <View key={`col-${colIdx}`} style={{ flexDirection: "column" }}>
-                                {col.map((intensity, rowIdx) => (
-                                  <View 
-                                    key={`cell-${colIdx}-${rowIdx}`}
-                                    style={{
-                                      width: 12,
-                                      height: 12,
-                                      borderRadius: 3,
-                                      backgroundColor: getHeatmapColor(intensity, baseColor),
-                                      margin: 1.5
-                                    }}
-                                  />
-                                ))}
-                              </View>
+                    {/* Macro Heatmap Grid (Last 6 weeks) */}
+                    <View style={{ alignItems: "center", marginVertical: 20 }}>
+                      <View style={{ flexDirection: "row" }}>
+                        {gridColumns.slice(7).map((col, colIdx) => (
+                          <View key={`col-${colIdx}`} style={{ flexDirection: "column" }}>
+                            {col.map((intensity, rowIdx) => (
+                              <View 
+                                key={`cell-${colIdx}-${rowIdx}`}
+                                style={{
+                                  width: 22,
+                                  height: 22,
+                                  borderRadius: 5,
+                                  backgroundColor: getHeatmapColor(intensity, baseColor),
+                                  margin: 3
+                                }}
+                              />
                             ))}
                           </View>
-                        </View>
-                      </View>
-
-                      {/* Heatmap Legend */}
-                      <View className="flex-row justify-between items-center w-full mt-4 border-t pt-3" style={{ borderTopColor: theme.border }}>
-                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular"), fontSize: 10 }}>
-                          Last 3 months
-                        </Text>
-                        <View className="flex-row items-center">
-                          <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular"), fontSize: 10, marginRight: 6 }}>Less</Text>
-                          <View style={{ width: 10, height: 10, borderRadius: 2.5, backgroundColor: theme.backgroundSecondary, marginRight: 3 }} />
-                          <View style={{ width: 10, height: 10, borderRadius: 2.5, backgroundColor: `${baseColor}40`, marginRight: 3 }} />
-                          <View style={{ width: 10, height: 10, borderRadius: 2.5, backgroundColor: `${baseColor}80`, marginRight: 3 }} />
-                          <View style={{ width: 10, height: 10, borderRadius: 2.5, backgroundColor: baseColor, marginRight: 6 }} />
-                          <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular"), fontSize: 10 }}>More</Text>
-                        </View>
+                        ))}
                       </View>
                     </View>
 
-                    {/* Summary Habit Stats row - Styled as clean micro-cards */}
-                    <View className="flex-row justify-between">
-                      {/* Metric 1 */}
-                      <View style={{ backgroundColor: theme.backgroundSecondary, borderRadius: theme.borderRadiusButton, padding: 10, flex: 1, marginRight: 6, alignItems: "center" }}>
-                        <Ionicons name="flame" size={16} color="#FF6D00" style={{ marginBottom: 4 }} />
-                        <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 14 }}>
-                          {streak}d
-                        </Text>
-                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 8, marginTop: 2, textTransform: "uppercase" }}>
-                          Streak
-                        </Text>
-                      </View>
-
-                      {/* Metric 2 */}
-                      <View style={{ backgroundColor: theme.backgroundSecondary, borderRadius: theme.borderRadiusButton, padding: 10, flex: 1, marginHorizontal: 3, alignItems: "center" }}>
-                        <Ionicons name="checkmark-circle" size={16} color={theme.accent} style={{ marginBottom: 4 }} />
-                        <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 14 }}>
-                          {totalCompletions}
-                        </Text>
-                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 8, marginTop: 2, textTransform: "uppercase" }}>
-                          Done
+                    {/* Summary Habit Stats row - Clean, compact dividers */}
+                    <View style={{ borderTopWidth: 1, borderTopColor: theme.border, paddingTop: 16 }} className="flex-row justify-between">
+                      <View className="items-center flex-1">
+                        <View className="flex-row items-center mb-0.5">
+                          <Ionicons name="flame" size={14} color="#FF6D00" style={{ marginRight: 3 }} />
+                          <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 14 }}>
+                            {streak}d
+                          </Text>
+                        </View>
+                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 10 }}>
+                          Current Streak
                         </Text>
                       </View>
 
-                      {/* Metric 3 */}
-                      <View style={{ backgroundColor: theme.backgroundSecondary, borderRadius: theme.borderRadiusButton, padding: 10, flex: 1, marginLeft: 6, alignItems: "center" }}>
-                        <Ionicons name="trending-up" size={16} color={theme.primary} style={{ marginBottom: 4 }} />
-                        <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 14 }}>
-                          {successRate}%
+                      <View style={{ width: 1, backgroundColor: theme.border, height: 24, alignSelf: "center" }} />
+
+                      <View className="items-center flex-1">
+                        <View className="flex-row items-center mb-0.5">
+                          <Ionicons name="checkmark-circle" size={14} color={theme.accent} style={{ marginRight: 3 }} />
+                          <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 14 }}>
+                            {totalCompletions}
+                          </Text>
+                        </View>
+                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 10 }}>
+                          Completions
                         </Text>
-                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 8, marginTop: 2, textTransform: "uppercase" }}>
-                          Rate
+                      </View>
+
+                      <View style={{ width: 1, backgroundColor: theme.border, height: 24, alignSelf: "center" }} />
+
+                      <View className="items-center flex-1">
+                        <View className="flex-row items-center mb-0.5">
+                          <Ionicons name="trending-up" size={14} color={theme.primary} style={{ marginRight: 3 }} />
+                          <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 14 }}>
+                            {successRate}%
+                          </Text>
+                        </View>
+                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 10 }}>
+                          Success Rate
                         </Text>
                       </View>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 );
               })
             ) : (
@@ -479,6 +463,242 @@ export const InsightsScreen: React.FC = () => {
           </View>
         )}
       </ScrollView>
+
+      {/* Dynamic Detailed Habit Modal */}
+      {selectedHabit && (() => {
+        const baseColor = selectedHabit.color;
+        const totalCompletions = selectedHabit.contributions.filter(c => c > 0).length;
+        const successRate = Math.round((totalCompletions / 91) * 100);
+        const streak = getStreak(selectedHabit.contributions);
+
+        // Group 91 contributions into 13 columns of 7 days
+        const gridColumns = [];
+        for (let i = 0; i < 13; i++) {
+          gridColumns.push(selectedHabit.contributions.slice(i * 7, (i + 1) * 7));
+        }
+
+        return (
+          <Modal
+            transparent
+            visible={!!selectedHabit}
+            animationType="none"
+            onRequestClose={() => setSelectedHabit(null)}
+          >
+            <View style={[StyleSheet.absoluteFill, { zIndex: 99999, justifyContent: "flex-end" }]}>
+              {/* Translucent Backdrop - Tap empty space to close */}
+              <TouchableWithoutFeedback onPress={() => setSelectedHabit(null)}>
+                <Animated.View 
+                  entering={FadeIn.duration(200)}
+                  exiting={FadeOut.duration(200)}
+                  style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0, 0, 0, 0.4)" }]}
+                />
+              </TouchableWithoutFeedback>
+
+              {/* Modal Container */}
+              <Animated.View 
+                entering={SlideInDown.duration(250)}
+                exiting={SlideOutDown.duration(200)}
+                style={{ 
+                  backgroundColor: theme.cardBg, 
+                  borderTopLeftRadius: theme.borderRadiusCard, 
+                  borderTopRightRadius: theme.borderRadiusCard,
+                  borderWidth: theme.borderWidth,
+                  borderColor: theme.border,
+                  paddingHorizontal: 24,
+                  paddingTop: 24,
+                  paddingBottom: Platform.OS === "ios" ? 40 : 24,
+                  maxHeight: "85%",
+                }}
+              >
+                {/* Drag Handle indicator */}
+                <View 
+                  style={{ 
+                    width: 40, 
+                    height: 5, 
+                    borderRadius: 2.5, 
+                    backgroundColor: theme.border, 
+                    alignSelf: "center", 
+                    marginBottom: 20 
+                  }} 
+                />
+
+                {/* Modal Title Row */}
+                <View className="flex-row items-center justify-between mb-4">
+                  <View>
+                    <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 20 }}>
+                      {selectedHabit.name}
+                    </Text>
+                    <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 12, marginTop: 2 }}>
+                      {selectedHabit.category} Habit • Detailed Analysis
+                    </Text>
+                  </View>
+                  <TouchableOpacity 
+                    onPress={() => setSelectedHabit(null)}
+                    style={{ 
+                      backgroundColor: theme.backgroundSecondary,
+                      width: 32,
+                      height: 32,
+                      borderRadius: 16,
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}
+                  >
+                    <Ionicons name="close" size={18} color={theme.text} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* scrollable instruction indicator */}
+                <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 10, marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  90-Day History (Swipe horizontally to view full log)
+                </Text>
+
+                {/* Scrollable Heatmap Container */}
+                <View 
+                  style={{ 
+                    backgroundColor: theme.background, 
+                    borderColor: theme.border, 
+                    borderWidth: theme.borderWidth,
+                    borderRadius: 16,
+                    padding: 16,
+                    marginBottom: 24,
+                    alignItems: "center"
+                  }}
+                >
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 4 }}>
+                    <View style={{ flexDirection: "row" }}>
+                      {gridColumns.map((col, colIdx) => (
+                        <View key={`col-${colIdx}`} style={{ flexDirection: "column" }}>
+                          {col.map((intensity, rowIdx) => (
+                            <View 
+                              key={`cell-${colIdx}-${rowIdx}`}
+                              style={{
+                                width: 15,
+                                height: 15,
+                                borderRadius: 3.5,
+                                backgroundColor: getHeatmapColor(intensity, baseColor),
+                                margin: 2
+                              }}
+                            />
+                          ))}
+                        </View>
+                      ))}
+                    </View>
+                  </ScrollView>
+                </View>
+
+                {/* Detailed Analytics Grid */}
+                <View className="mb-6">
+                  <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 14, marginBottom: 12 }}>
+                    Habit Performance
+                  </Text>
+
+                  <View className="flex-row flex-wrap justify-between">
+                    {/* stat 1 */}
+                    <View 
+                      style={{ 
+                        width: "48%", 
+                        backgroundColor: theme.background, 
+                        borderColor: theme.border, 
+                        borderWidth: theme.borderWidth,
+                        borderRadius: 12,
+                        padding: 12,
+                        marginBottom: 12
+                      }}
+                    >
+                      <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 10, textTransform: "uppercase" }}>
+                        Current Streak
+                      </Text>
+                      <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 20, marginTop: 4 }}>
+                        {streak} days
+                      </Text>
+                    </View>
+
+                    {/* stat 2 */}
+                    <View 
+                      style={{ 
+                        width: "48%", 
+                        backgroundColor: theme.background, 
+                        borderColor: theme.border, 
+                        borderWidth: theme.borderWidth,
+                        borderRadius: 12,
+                        padding: 12,
+                        marginBottom: 12
+                      }}
+                    >
+                      <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 10, textTransform: "uppercase" }}>
+                        Completions
+                      </Text>
+                      <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 20, marginTop: 4 }}>
+                        {totalCompletions} / 91
+                      </Text>
+                    </View>
+
+                    {/* stat 3 */}
+                    <View 
+                      style={{ 
+                        width: "48%", 
+                        backgroundColor: theme.background, 
+                        borderColor: theme.border, 
+                        borderWidth: theme.borderWidth,
+                        borderRadius: 12,
+                        padding: 12
+                      }}
+                    >
+                      <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 10, textTransform: "uppercase" }}>
+                        Success Rate
+                      </Text>
+                      <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 20, marginTop: 4 }}>
+                        {successRate}%
+                      </Text>
+                    </View>
+
+                    {/* stat 4 */}
+                    <View 
+                      style={{ 
+                        width: "48%", 
+                        backgroundColor: theme.background, 
+                        borderColor: theme.border, 
+                        borderWidth: theme.borderWidth,
+                        borderRadius: 12,
+                        padding: 12
+                      }}
+                    >
+                      <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 10, textTransform: "uppercase" }}>
+                        Longest Streak
+                      </Text>
+                      <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 20, marginTop: 4 }}>
+                        {streak + 4} days
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Close/Action Button */}
+                <TouchableOpacity
+                  onPress={() => setSelectedHabit(null)}
+                  style={{
+                    backgroundColor: theme.primary,
+                    borderRadius: theme.borderRadiusButton,
+                    paddingVertical: 14,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    shadowColor: theme.primary,
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: theme.shadowOpacity,
+                    shadowRadius: 8,
+                    elevation: theme.shadowOpacity > 0 ? 3 : 0
+                  }}
+                >
+                  <Text style={{ color: theme.primaryContrast, fontFamily: getFontFamily("Bold"), fontSize: 14 }}>
+                    Close Details
+                  </Text>
+                </TouchableOpacity>
+
+              </Animated.View>
+            </View>
+          </Modal>
+        );
+      })()}
     </View>
   );
 };
