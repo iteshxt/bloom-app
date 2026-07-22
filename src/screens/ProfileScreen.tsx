@@ -134,8 +134,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={["top"]}>
-      <StatusBar style={theme.statusBar} />
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 60 }}>
         
         {/* Navigation Header */}
@@ -716,6 +715,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
