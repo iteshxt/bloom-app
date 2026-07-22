@@ -75,14 +75,10 @@ export const InsightsScreen: React.FC = () => {
   };
 
   const getFontFamily = (weight: "Regular" | "Medium" | "Bold") => {
-    const isRetro = currentTheme === "retro" || currentTheme === "mario";
-    if (isRetro) {
-      return Platform.OS === "ios" ? "Courier-Bold" : "monospace";
-    }
     switch (weight) {
-      case "Regular": return "Outfit_400Regular";
-      case "Medium": return "Outfit_500Medium";
-      case "Bold": return "Outfit_700Bold";
+      case "Regular": return theme.fontFamilyRegular;
+      case "Medium": return theme.fontFamilyMedium;
+      case "Bold": return theme.fontFamilyBold;
     }
   };
 
@@ -96,9 +92,9 @@ export const InsightsScreen: React.FC = () => {
     marginBottom: 20,
     shadowColor: theme.text,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: currentTheme === "mario" ? 0 : 0.03,
-    shadowRadius: 10,
-    elevation: 1
+    shadowOpacity: currentTheme === "mario" ? 0 : theme.shadowOpacity,
+    shadowRadius: theme.shadowRadius,
+    elevation: theme.shadowOpacity > 0 ? 1 : 0
   };
 
   return (
@@ -144,17 +140,19 @@ export const InsightsScreen: React.FC = () => {
             borderColor: theme.border, 
             borderWidth: theme.borderWidth, 
             borderRadius: theme.borderRadiusCard,
-            position: "relative" 
+            position: "relative",
+            height: 44,
+            padding: 4
           }} 
-          className="flex-row p-1 mb-5"
+          className="flex-row mb-5"
         >
           <Animated.View 
             style={{
               position: "absolute",
               top: 4,
               bottom: 4,
-              left: activeView === "habits" ? "1%" : "51%",
-              width: "48%",
+              left: activeView === "habits" ? 4 : "50%",
+              right: activeView === "habits" ? "50%" : 4,
               backgroundColor: theme.primary,
               borderRadius: theme.borderRadiusButton,
             }}
@@ -163,12 +161,12 @@ export const InsightsScreen: React.FC = () => {
 
           <TouchableOpacity 
             onPress={() => setActiveView("habits")}
-            className="flex-1 py-2.5 items-center justify-center rounded-full"
+            className="flex-1 items-center justify-center"
             style={{ zIndex: 2 }}
           >
             <Text style={{ 
               color: activeView === "habits" ? theme.primaryContrast : theme.textSecondary,
-              fontFamily: getFontFamily("Medium"), 
+              fontFamily: getFontFamily("Bold"), 
               fontSize: 13 
             }}>
               Habit Heatmaps
@@ -177,12 +175,12 @@ export const InsightsScreen: React.FC = () => {
           
           <TouchableOpacity 
             onPress={() => setActiveView("focus")}
-            className="flex-1 py-2.5 items-center justify-center rounded-full"
+            className="flex-1 items-center justify-center"
             style={{ zIndex: 2 }}
           >
             <Text style={{ 
               color: activeView === "focus" ? theme.primaryContrast : theme.textSecondary,
-              fontFamily: getFontFamily("Medium"), 
+              fontFamily: getFontFamily("Bold"), 
               fontSize: 13 
             }}>
               Focus & Mood
@@ -221,96 +219,107 @@ export const InsightsScreen: React.FC = () => {
                     {/* Habit Card Header */}
                     <View className="flex-row items-center justify-between mb-4">
                       <View>
-                        <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 16 }}>
+                        <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 18 }}>
                           {habit.name}
                         </Text>
                         <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 11, marginTop: 1 }}>
                           {habit.category} Habit
                         </Text>
                       </View>
-                      <View style={{ backgroundColor: `${baseColor}15` }} className="px-2.5 py-0.5 rounded-full">
-                        <Text style={{ color: baseColor, fontFamily: getFontFamily("Bold"), fontSize: 9, textTransform: "uppercase" }}>
+                      <View style={{ backgroundColor: `${baseColor}15` }} className="px-2.5 py-1 rounded-full">
+                        <Text style={{ color: baseColor, fontFamily: getFontFamily("Bold"), fontSize: 9, textTransform: "uppercase", letterSpacing: 0.5 }}>
                           Active
                         </Text>
                       </View>
                     </View>
 
                     {/* Dynamic Heatmap Grid (13 weeks x 7 days) */}
-                    <View className="mb-4 items-center">
-                      <View style={{ flexDirection: "row" }}>
-                        {gridColumns.map((col, colIdx) => (
-                          <View key={`col-${colIdx}`} style={{ flexDirection: "column" }}>
-                            {col.map((intensity, rowIdx) => (
-                              <View 
-                                key={`cell-${colIdx}-${rowIdx}`}
-                                style={{
-                                  width: 11,
-                                  height: 11,
-                                  borderRadius: 2.5,
-                                  backgroundColor: getHeatmapColor(intensity, baseColor),
-                                  margin: 1.5
-                                }}
-                              />
+                    <View className="mb-4 bg-white p-4 rounded-2xl border" style={{ borderColor: theme.border, alignItems: "center" }}>
+                      <View className="flex-row items-center">
+                        {/* Day Labels Column on Left */}
+                        <View className="justify-between pr-2.5" style={{ height: 95, paddingVertical: 2 }}>
+                          <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 8 }}>Mon</Text>
+                          <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 8 }}>Wed</Text>
+                          <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 8 }}>Fri</Text>
+                        </View>
+                        
+                        <View>
+                          {/* Months Top Header Row */}
+                          <View className="flex-row justify-between mb-1.5 px-0.5" style={{ width: 13 * 15 }}>
+                            <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 9 }}>May</Text>
+                            <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 9 }}>Jun</Text>
+                            <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 9 }}>Jul</Text>
+                          </View>
+
+                          <View style={{ flexDirection: "row" }}>
+                            {gridColumns.map((col, colIdx) => (
+                              <View key={`col-${colIdx}`} style={{ flexDirection: "column" }}>
+                                {col.map((intensity, rowIdx) => (
+                                  <View 
+                                    key={`cell-${colIdx}-${rowIdx}`}
+                                    style={{
+                                      width: 12,
+                                      height: 12,
+                                      borderRadius: 3,
+                                      backgroundColor: getHeatmapColor(intensity, baseColor),
+                                      margin: 1.5
+                                    }}
+                                  />
+                                ))}
+                              </View>
                             ))}
                           </View>
-                        ))}
+                        </View>
                       </View>
-                      
+
                       {/* Heatmap Legend */}
-                      <View className="flex-row justify-between items-center w-full mt-3 px-1">
+                      <View className="flex-row justify-between items-center w-full mt-4 border-t pt-3" style={{ borderTopColor: theme.border }}>
                         <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular"), fontSize: 10 }}>
                           Last 3 months
                         </Text>
                         <View className="flex-row items-center">
-                          <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular"), fontSize: 10, marginRight: 4 }}>Less</Text>
-                          <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: theme.backgroundSecondary, marginRight: 2 }} />
-                          <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: `${baseColor}40`, marginRight: 2 }} />
-                          <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: `${baseColor}80`, marginRight: 2 }} />
-                          <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: baseColor, marginRight: 4 }} />
+                          <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular"), fontSize: 10, marginRight: 6 }}>Less</Text>
+                          <View style={{ width: 10, height: 10, borderRadius: 2.5, backgroundColor: theme.backgroundSecondary, marginRight: 3 }} />
+                          <View style={{ width: 10, height: 10, borderRadius: 2.5, backgroundColor: `${baseColor}40`, marginRight: 3 }} />
+                          <View style={{ width: 10, height: 10, borderRadius: 2.5, backgroundColor: `${baseColor}80`, marginRight: 3 }} />
+                          <View style={{ width: 10, height: 10, borderRadius: 2.5, backgroundColor: baseColor, marginRight: 6 }} />
                           <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Regular"), fontSize: 10 }}>More</Text>
                         </View>
                       </View>
                     </View>
 
-                    {/* Summary Habit Stats row */}
-                    <View style={{ borderTopWidth: 1, borderTopColor: theme.border, paddingTop: 12 }} className="flex-row justify-between">
-                      <View className="items-center flex-1">
-                        <View className="flex-row items-center mb-0.5">
-                          <Ionicons name="flame" size={14} color="#FF6D00" style={{ marginRight: 3 }} />
-                          <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 14 }}>
-                            {streak}d
-                          </Text>
-                        </View>
-                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 10 }}>
-                          Current Streak
+                    {/* Summary Habit Stats row - Styled as clean micro-cards */}
+                    <View className="flex-row justify-between">
+                      {/* Metric 1 */}
+                      <View style={{ backgroundColor: theme.backgroundSecondary, borderRadius: theme.borderRadiusButton, padding: 10, flex: 1, marginRight: 6, alignItems: "center" }}>
+                        <Ionicons name="flame" size={16} color="#FF6D00" style={{ marginBottom: 4 }} />
+                        <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 14 }}>
+                          {streak}d
+                        </Text>
+                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 8, marginTop: 2, textTransform: "uppercase" }}>
+                          Streak
                         </Text>
                       </View>
 
-                      <View style={{ width: 1, backgroundColor: theme.border }} className="h-6" />
-
-                      <View className="items-center flex-1">
-                        <View className="flex-row items-center mb-0.5">
-                          <Ionicons name="checkmark-circle" size={14} color={theme.accent} style={{ marginRight: 3 }} />
-                          <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 14 }}>
-                            {totalCompletions}
-                          </Text>
-                        </View>
-                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 10 }}>
-                          Completions
+                      {/* Metric 2 */}
+                      <View style={{ backgroundColor: theme.backgroundSecondary, borderRadius: theme.borderRadiusButton, padding: 10, flex: 1, marginHorizontal: 3, alignItems: "center" }}>
+                        <Ionicons name="checkmark-circle" size={16} color={theme.accent} style={{ marginBottom: 4 }} />
+                        <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 14 }}>
+                          {totalCompletions}
+                        </Text>
+                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 8, marginTop: 2, textTransform: "uppercase" }}>
+                          Done
                         </Text>
                       </View>
 
-                      <View style={{ width: 1, backgroundColor: theme.border }} className="h-6" />
-
-                      <View className="items-center flex-1">
-                        <View className="flex-row items-center mb-0.5">
-                          <Ionicons name="trending-up" size={14} color={theme.primary} style={{ marginRight: 3 }} />
-                          <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 14 }}>
-                            {successRate}%
-                          </Text>
-                        </View>
-                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 10 }}>
-                          Success Rate
+                      {/* Metric 3 */}
+                      <View style={{ backgroundColor: theme.backgroundSecondary, borderRadius: theme.borderRadiusButton, padding: 10, flex: 1, marginLeft: 6, alignItems: "center" }}>
+                        <Ionicons name="trending-up" size={16} color={theme.primary} style={{ marginBottom: 4 }} />
+                        <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 14 }}>
+                          {successRate}%
+                        </Text>
+                        <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Medium"), fontSize: 8, marginTop: 2, textTransform: "uppercase" }}>
+                          Rate
                         </Text>
                       </View>
                     </View>
