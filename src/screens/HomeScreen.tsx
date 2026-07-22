@@ -697,20 +697,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
           )}
 
           {/* Cheers & Nudge Row */}
+          {/* Cheers & Nudge Row */}
           <View style={{ borderTopWidth: 1, borderTopColor: theme.border, paddingTop: 16 }}>
-            <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Bold"), fontSize: 11, marginBottom: 12 }}>
-              Send Co-working Cheer
-            </Text>
-            
             <View className="flex-row justify-between">
               {/* Nudge Trigger */}
               <TouchableOpacity 
                 onPress={() => showToast(`Sent a Nudge to Sarah!`, "success")}
-                style={{ backgroundColor: `${theme.accent}1E` }}
+                style={{ backgroundColor: "#E6F4EA" }}
                 className="flex-row items-center px-4 py-3 rounded-2xl flex-1 mr-2 justify-center"
               >
-                <Ionicons name="leaf" size={16} color={theme.primary} style={{ marginRight: 6 }} />
-                <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 12 }}>Nudge</Text>
+                <Ionicons name="leaf" size={16} color="#137333" style={{ marginRight: 6 }} />
+                <Text style={{ color: "#137333", fontFamily: getFontFamily("Bold"), fontSize: 12 }}>Nudge</Text>
               </TouchableOpacity>
 
               {/* Heart Trigger */}
@@ -719,21 +716,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToProfile, onS
                   triggerHeartBurst();
                   showToast(`Sent a Heart to Sarah!`, "success");
                 }}
-                style={{ backgroundColor: `${theme.primary}1A` }}
+                style={{ backgroundColor: "#FCE8E6" }}
                 className="flex-row items-center px-4 py-3 rounded-2xl flex-1 mx-2 justify-center"
               >
-                <Ionicons name="heart" size={16} color={theme.primary} style={{ marginRight: 6 }} />
-                <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 12 }}>Heart</Text>
+                <Ionicons name="heart" size={16} color="#C5221F" style={{ marginRight: 6 }} />
+                <Text style={{ color: "#C5221F", fontFamily: getFontFamily("Bold"), fontSize: 12 }}>Heart</Text>
               </TouchableOpacity>
 
               {/* Coffee Trigger */}
               <TouchableOpacity 
                 onPress={() => showToast(`Sent a Coffee to Sarah!`, "success")}
-                style={{ backgroundColor: `${theme.textSecondary}15` }}
+                style={{ backgroundColor: "#F7ECE1" }}
                 className="flex-row items-center px-4 py-3 rounded-2xl flex-1 ml-2 justify-center"
               >
-                <Ionicons name="cafe" size={16} color={theme.textSecondary} style={{ marginRight: 6 }} />
-                <Text style={{ color: theme.text, fontFamily: getFontFamily("Bold"), fontSize: 12 }}>Coffee</Text>
+                <Ionicons name="cafe" size={16} color="#795548" style={{ marginRight: 6 }} />
+                <Text style={{ color: "#795548", fontFamily: getFontFamily("Bold"), fontSize: 12 }}>Coffee</Text>
               </TouchableOpacity>
             </View>
           </View>

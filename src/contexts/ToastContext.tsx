@@ -17,11 +17,11 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const getFontFamily = (weight: "Regular" | "Medium" | "Bold") => {
-    const isRetro = currentTheme === "retro" || currentTheme === "mario";
-    if (isRetro) {
-      return Platform.OS === "ios" ? "Courier-Bold" : "monospace";
+    switch (weight) {
+      case "Regular": return theme.fontFamilyRegular;
+      case "Medium": return theme.fontFamilyMedium;
+      case "Bold": return theme.fontFamilyBold;
     }
-    return `Outfit_${weight === "Regular" ? "400Regular" : weight === "Medium" ? "500Medium" : "700Bold"}`;
   };
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
@@ -72,7 +72,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           exiting={FadeOutUp.duration(200)}
           style={{
             position: 'absolute',
-            top: Platform.OS === 'ios' ? 60 : 40,
+            top: Platform.OS === 'ios' ? 76 : 56,
             alignSelf: 'center',
             backgroundColor: getBackgroundColor(),
             borderRadius: 100, // Sleek capsule shape

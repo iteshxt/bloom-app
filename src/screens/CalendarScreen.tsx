@@ -1030,25 +1030,27 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
 
             {/* Selector: Category & Assignee */}
             <View className="flex-row mb-6">
-              <View className="flex-1 mr-2">
+              <View className="flex-1 mr-3">
                 <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Bold"), fontSize: 10, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 }}>
                   Category
                 </Text>
-                <View className="flex-row items-center justify-between" style={{ paddingVertical: 4 }}>
+                <View className="flex-row p-1" style={{ backgroundColor: theme.background, borderRadius: theme.borderRadiusButton, borderWidth: theme.borderWidth, borderColor: theme.border }}>
                   {["To Do", "Reminder", "Event"].map((cat) => (
                     <TouchableOpacity
                       key={cat}
                       onPress={() => setNewCategory(cat as any)}
                       style={{
-                        paddingBottom: 4,
-                        borderBottomWidth: newCategory === cat ? 2 : 0,
-                        borderBottomColor: theme.primary
+                        backgroundColor: newCategory === cat ? theme.primary : "transparent",
+                        flex: 1,
+                        paddingVertical: 6,
+                        borderRadius: theme.borderRadiusButton,
+                        alignItems: "center"
                       }}
                     >
                       <Text style={{ 
-                        color: newCategory === cat ? theme.text : theme.textSecondary, 
+                        color: newCategory === cat ? theme.primaryContrast : theme.textSecondary, 
                         fontFamily: getFontFamily("Bold"), 
-                        fontSize: 12
+                        fontSize: 11
                       }}>
                         {cat}
                       </Text>
@@ -1057,7 +1059,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
                 </View>
               </View>
 
-              <View className="flex-1 ml-4">
+              <View className="flex-1 ml-1" style={{ maxWidth: "38%" }}>
                 <Text style={{ color: theme.textSecondary, fontFamily: getFontFamily("Bold"), fontSize: 10, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 }}>
                   Ownership
                 </Text>
@@ -1077,7 +1079,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onModalToggle })
                       <Text style={{ 
                         color: newOwner === own ? theme.primaryContrast : theme.textSecondary, 
                         fontFamily: getFontFamily("Bold"), 
-                        fontSize: 12
+                        fontSize: 11
                       }}>
                         {own}
                       </Text>
