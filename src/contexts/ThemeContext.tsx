@@ -62,7 +62,7 @@ export const THEMES: Record<ThemeSlug, { name: string; milestone: string; colors
   },
   sakura: {
     name: "Midnight Orchid",
-    milestone: "5 Days",
+    milestone: "0 Days",
     colors: {
       primary: "#715578", // Rich Dusky Orchid
       primaryDark: "#312A44", // Midnight Orchid
@@ -253,9 +253,9 @@ const ASYNC_STORAGE_THEME_KEY = "@bloom_current_theme";
 const ASYNC_STORAGE_STREAK_KEY = "@bloom_current_streak";
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentTheme, setCurrentThemeState] = useState<ThemeSlug>("lavender");
+  const [currentTheme, setCurrentThemeState] = useState<ThemeSlug>("sakura");
   const [currentStreak, setCurrentStreak] = useState<number>(0);
-  const [unlockedThemes, setUnlockedThemes] = useState<ThemeSlug[]>(["lavender"]);
+  const [unlockedThemes, setUnlockedThemes] = useState<ThemeSlug[]>(["sakura", "lavender"]);
   const [isThemeLoading, setIsThemeLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -267,8 +267,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const streak = storedStreak ? parseInt(storedStreak, 10) : 0;
         setCurrentStreak(streak);
         
-        const unlocked: ThemeSlug[] = ["lavender"];
-        if (streak >= 5) unlocked.push("sakura");
+        const unlocked: ThemeSlug[] = ["sakura", "lavender"];
+        if (streak >= 5) { /* sakura and lavender are already unlocked */ }
         if (streak >= 10) unlocked.push("minimal");
         if (streak >= 15) unlocked.push("honey");
         if (streak >= 20) unlocked.push("nordic");
@@ -280,7 +280,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (storedTheme && unlocked.includes(storedTheme as ThemeSlug)) {
           setCurrentThemeState(storedTheme as ThemeSlug);
         } else {
-          setCurrentThemeState("lavender");
+          setCurrentThemeState("sakura");
         }
       } catch (e) {
         console.error("Failed to load theme settings", e);
@@ -309,8 +309,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       await AsyncStorage.setItem(ASYNC_STORAGE_STREAK_KEY, newStreak.toString());
       setCurrentStreak(newStreak);
 
-      const unlocked: ThemeSlug[] = ["lavender"];
-      if (newStreak >= 5) unlocked.push("sakura");
+      const unlocked: ThemeSlug[] = ["sakura", "lavender"];
+      if (newStreak >= 5) { /* already unlocked */ }
       if (newStreak >= 10) unlocked.push("minimal");
       if (newStreak >= 15) unlocked.push("honey");
       if (newStreak >= 20) unlocked.push("nordic");
@@ -320,7 +320,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setUnlockedThemes(unlocked);
 
       if (!unlocked.includes(currentTheme)) {
-        await setTheme("lavender");
+        await setTheme("sakura");
       }
     } catch (e) {
       console.error("Failed to update streak / themes", e);

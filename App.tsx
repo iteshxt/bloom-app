@@ -116,19 +116,19 @@ function AppContent() {
       }),
     ]).start();
 
-    // Guard minimum display time of 1 second
+    // Guard minimum display time of 1.5 seconds to let spring animations settle
     const timer = setTimeout(() => {
       setMinTimePassed(true);
-    }, 1000);
+    }, 1500);
     return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     if (!isAppLoading && minTimePassed) {
-      // 2. Once loaded and 1.0s has passed, fade out splash screen overlay
+      // 2. Once loaded and 1.5s has passed, fade out splash screen overlay smoothly
       Animated.timing(fadeAnim, {
         toValue: 0,
-        duration: 400,
+        duration: 500,
         useNativeDriver: true,
       }).start(() => {
         setShowSplash(false);
