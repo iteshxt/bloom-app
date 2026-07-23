@@ -23,33 +23,35 @@ import { CalendarScreen } from "./src/screens/CalendarScreen";
 import { InsightsScreen } from "./src/screens/InsightsScreen";
 import { ProfileScreen } from "./src/screens/ProfileScreen";
 import { SignInScreen } from "./src/screens/SignInScreen";
+import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { BottomDock, TabSlug } from "./src/components/BottomDock";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Dynamic text component override to alias font families app-wide
 const isIconFont = (fontName: string) => {
   if (!fontName) return false;
   const lower = fontName.toLowerCase();
-  return lower.includes("icon") || 
-         lower.includes("feather") || 
-         lower.includes("awesome") || 
-         lower.includes("vector") || 
-         lower.includes("material") || 
-         lower.includes("evil") || 
-         lower.includes("entypo") || 
-         lower.includes("antdesign") || 
-         lower.includes("simpleline") || 
-         lower.includes("octicons") || 
-         lower.includes("foundation") ||
-         lower.includes("ionicons");
+  return lower.includes("icon") ||
+    lower.includes("feather") ||
+    lower.includes("awesome") ||
+    lower.includes("vector") ||
+    lower.includes("material") ||
+    lower.includes("evil") ||
+    lower.includes("entypo") ||
+    lower.includes("antdesign") ||
+    lower.includes("simpleline") ||
+    lower.includes("octicons") ||
+    lower.includes("foundation") ||
+    lower.includes("ionicons");
 };
 
 const originalTextRender = (Text as any).render;
-(Text as any).render = function(props: any, ref: any) {
+(Text as any).render = function (props: any, ref: any) {
   const result = originalTextRender.call(this, props, ref);
-  
+
   if (result?.props?.style) {
     let currentFont = "";
-    
+
     if (Array.isArray(result.props.style)) {
       const found = result.props.style.find((s: any) => s?.fontFamily);
       if (found) currentFont = found.fontFamily;
@@ -78,7 +80,7 @@ const originalTextRender = (Text as any).render;
 
 function AppContent() {
   const { theme, isThemeLoading, currentTheme } = useTheme();
-  
+
   const [fontsLoaded] = useFonts({
     Outfit_400Regular,
     Outfit_500Medium,
@@ -92,6 +94,20 @@ function AppContent() {
   const [showProfile, setShowProfile] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  const handleSignIn = async () => {
+    const seen = await AsyncStorage.getItem('@bloom_onboarding_seen');
+    if (!seen) {
+      setShowOnboarding(true);
+    }
+    setIsSignedIn(true);
+  };
+
+  const handleOnboardingDone = async () => {
+    await AsyncStorage.setItem('@bloom_onboarding_seen', 'true');
+    setShowOnboarding(false);
+  };
 
   // Splash Screen Fade & Scale Animations
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -139,9 +155,13 @@ function AppContent() {
   // Render screens conditionally based on navigation state
   const renderScreen = () => {
     if (!isSignedIn) {
-      return <SignInScreen onSignIn={() => setIsSignedIn(true)} />;
+      return <SignInScreen onSignIn={handleSignIn} />;
     }
-    
+
+    if (showOnboarding) {
+      return <OnboardingScreen onDone={handleOnboardingDone} />;
+    }
+
     if (showProfile) {
       return <ProfileScreen onBack={() => setShowProfile(false)} />;
     }
@@ -160,66 +180,66 @@ function AppContent() {
   };
 
   return (
-    <SafeAreaView 
-      style={{ flex: 1, backgroundColor: !isSignedIn ? '#47304C' : theme.background }} 
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: showOnboarding ? '#EDE6F4' : (!isSignedIn ? '#715578' : theme.background) }}
       edges={["top"]}
     >
-      <StatusBar style={!isSignedIn ? "light" : theme.statusBar} />
-      
+      <StatusBar style={showOnboarding ? "dark" : (!isSignedIn ? "light" : theme.statusBar)} />
+
       <View key={currentTheme} style={{ flex: 1 }}>
         {renderScreen()}
       </View>
 
       {/* Persistent Floating Bottom Dock Navigation */}
-      {!isFullScreen && isSignedIn && !showProfile && (
-        <BottomDock 
-          activeTab={activeTab} 
-          onTabSelect={(tab) => setActiveTab(tab)} 
+      {!isFullScreen && isSignedIn && !showProfile && !showOnboarding && (
+        <BottomDock
+          activeTab={activeTab}
+          onTabSelect={(tab) => setActiveTab(tab)}
         />
       )}
 
       {/* Custom Premium Animated Splash Screen Overlay */}
       {showSplash && (
-        <Animated.View 
+        <Animated.View
           pointerEvents="none"
-          style={{ 
+          style={{
             position: "absolute",
             top: 0,
             bottom: 0,
             left: 0,
             right: 0,
-            backgroundColor: theme.background, 
-            justifyContent: "center", 
-            alignItems: "center", 
+            backgroundColor: theme.background,
+            justifyContent: "center",
+            alignItems: "center",
             opacity: fadeAnim,
             zIndex: 9999
           }}
         >
           {/* Background Watermark Leaves */}
           <View style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0, overflow: "hidden" }} pointerEvents="none">
-            <Ionicons 
-              name={theme.watermarkIcon as any} 
-              size={350} 
-              color={theme.primary} 
-              style={{ 
-                position: "absolute", 
-                left: -100, 
-                top: -50, 
-                opacity: 0.08, 
-                transform: [{ rotate: "-35deg" }] 
-              }} 
+            <Ionicons
+              name={theme.watermarkIcon as any}
+              size={350}
+              color={theme.primary}
+              style={{
+                position: "absolute",
+                left: -100,
+                top: -50,
+                opacity: 0.08,
+                transform: [{ rotate: "-35deg" }]
+              }}
             />
-            <Ionicons 
-              name={theme.watermarkIcon as any} 
-              size={450} 
-              color={theme.primary} 
-              style={{ 
-                position: "absolute", 
-                right: -150, 
-                bottom: 50, 
-                opacity: 0.08, 
-                transform: [{ rotate: "45deg" }] 
-              }} 
+            <Ionicons
+              name={theme.watermarkIcon as any}
+              size={450}
+              color={theme.primary}
+              style={{
+                position: "absolute",
+                right: -150,
+                bottom: 50,
+                opacity: 0.08,
+                transform: [{ rotate: "45deg" }]
+              }}
             />
           </View>
 
