@@ -161,7 +161,7 @@ function AppContent() {
 
   return (
     <SafeAreaView 
-      style={{ flex: 1, backgroundColor: !isSignedIn ? theme.primary : theme.background }} 
+      style={{ flex: 1, backgroundColor: !isSignedIn ? '#47304C' : theme.background }} 
       edges={["top"]}
     >
       <StatusBar style={!isSignedIn ? "light" : theme.statusBar} />
