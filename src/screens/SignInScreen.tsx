@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Dimensions, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -14,7 +14,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSignIn }) => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.primary }}>
-      {/* 55% Top Section */}
+      {/* Top Purple Section (approx 55% height) */}
       <View 
         style={{ 
           height: height * 0.55, 
@@ -24,39 +24,68 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSignIn }) => {
           position: 'relative',
         }}
       >
-        {/* Logo and Branding Container */}
-        <View className="items-center justify-center z-10" style={{ marginTop: -30 }}>
-          <View style={{ 
-            backgroundColor: 'rgba(255, 255, 255, 0.2)', 
-            width: 86, 
-            height: 86, 
-            borderRadius: theme.borderRadiusCard || 24, 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            marginBottom: 20,
-            borderWidth: 1,
-            borderColor: 'rgba(255, 255, 255, 0.3)'
-          }}>
-            <Ionicons name={theme.watermarkIcon as any || "leaf"} size={44} color={theme.primaryContrast || '#FFFFFF'} />
+        {/* Background Sparkles & Sparkle Dots */}
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          {/* Sparkles */}
+          <Ionicons name="sparkles" size={16} color="rgba(255,255,255,0.3)" style={{ position: 'absolute', top: '15%', left: '20%' }} />
+          <Ionicons name="sparkles" size={20} color="rgba(255,255,255,0.2)" style={{ position: 'absolute', top: '25%', right: '25%' }} />
+          <Ionicons name="sparkles" size={14} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', top: '45%', left: '15%' }} />
+          
+          {/* Faint side leaf illustrations (watermarks) */}
+          <Ionicons name="leaf-outline" size={80} color="rgba(255,255,255,0.06)" style={{ position: 'absolute', top: '10%', left: -20, transform: [{ rotate: '-45deg' }] }} />
+          <Ionicons name="leaf-outline" size={100} color="rgba(255,255,255,0.06)" style={{ position: 'absolute', top: '30%', right: -30, transform: [{ rotate: '45deg' }] }} />
+        </View>
+
+        {/* Mascot & Brand Container */}
+        <View className="items-center justify-center z-10" style={{ marginTop: -10 }}>
+          {/* Mascot Image (Actual android-icon-foreground containing the purple sprout character) */}
+          <View style={{ position: 'relative', width: 150, height: 150, marginBottom: 16 }}>
+            <Image 
+              source={require('../../assets/android-icon-foreground.png')} 
+              style={{ width: '100%', height: '100%', resizeMode: 'contain' }} 
+            />
+            {/* Mascot shadow */}
+            <View 
+              style={{
+                position: 'absolute',
+                bottom: 8,
+                alignSelf: 'center',
+                width: 70,
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: 'rgba(0,0,0,0.15)',
+                zIndex: -1,
+              }}
+            />
+          </View>
+          
+          {/* Custom Stylized Logo "bloom" with leaves on "m" */}
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center' }}>
+            <Text style={{ 
+              color: theme.primaryContrast || '#FFFFFF', 
+              fontFamily: "Outfit_700Bold", 
+              fontSize: 54, 
+              letterSpacing: -1.5,
+              lineHeight: 60,
+            }}>
+              bloom
+            </Text>
+            {/* Custom leaf decoration sprouting from the 'm' */}
+            <View style={{ position: 'absolute', right: -12, top: 4 }}>
+              <Ionicons name="leaf" size={20} color="#A7D3A6" style={{ transform: [{ rotate: '25deg' }] }} />
+            </View>
           </View>
           
           <Text style={{ 
             color: theme.primaryContrast || '#FFFFFF', 
-            fontFamily: "Outfit_700Bold", 
-            fontSize: 42, 
-            letterSpacing: -1.5 
-          }}>
-            Bloom
-          </Text>
-          
-          <Text style={{ 
-            color: theme.primaryContrast || '#FFFFFF', 
             fontFamily: "Outfit_500Medium", 
-            fontSize: 16, 
-            marginTop: 6, 
-            opacity: 0.9 
+            fontSize: 13, 
+            marginTop: 4, 
+            opacity: 0.8,
+            letterSpacing: 2,
+            textTransform: 'uppercase'
           }}>
-            Grow your habits together
+            Grow Together
           </Text>
         </View>
 
@@ -65,10 +94,10 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSignIn }) => {
           style={{
             position: 'absolute',
             bottom: 0,
-            width: width * 1.5,
-            height: width * 0.5, // The height of the dome
-            borderTopLeftRadius: width * 0.75,
-            borderTopRightRadius: width * 0.75,
+            width: width * 1.4,
+            height: width * 0.45,
+            borderTopLeftRadius: width * 0.7,
+            borderTopRightRadius: width * 0.7,
             backgroundColor: theme.background,
             alignSelf: 'center',
             zIndex: 1,
@@ -76,7 +105,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSignIn }) => {
         />
       </View>
 
-      {/* 45% Bottom Welcome & Action Section */}
+      {/* Bottom Welcome & Action Section (approx 45% height) */}
       <View 
         style={{ 
           flex: 1,
@@ -84,10 +113,17 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSignIn }) => {
           alignItems: 'center', 
           justifyContent: 'flex-start',
           paddingHorizontal: 32,
-          paddingTop: 10, // A bit of padding since the dome gives space above
+          paddingTop: 16,
           zIndex: 10,
         }}
       >
+        {/* Leaf Accent Divider (dot - leaf - dot) */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+          <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: theme.primary, opacity: 0.3, marginRight: 8 }} />
+          <Ionicons name="leaf" size={14} color={theme.primary} style={{ opacity: 0.4 }} />
+          <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: theme.primary, opacity: 0.3, marginLeft: 8 }} />
+        </View>
+
         <Text style={{ 
           color: theme.text, 
           fontFamily: "Outfit_700Bold", 
@@ -103,9 +139,9 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSignIn }) => {
           fontFamily: "Outfit_500Medium", 
           fontSize: 14, 
           textAlign: 'center', 
-          marginBottom: 40,
+          marginBottom: 44,
           lineHeight: 20,
-          paddingHorizontal: 12,
+          paddingHorizontal: 16,
         }}>
           Sign in to continue growing your garden and tracking your tasks.
         </Text>
@@ -125,11 +161,13 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSignIn }) => {
             justifyContent: 'center',
             shadowColor: theme.text,
             shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.06,
+            shadowOpacity: 0.05,
             shadowRadius: 8,
             elevation: 3,
+            marginBottom: height * 0.04, // Bottom spacing
           }}
         >
+          {/* Using logo-google from Ionicons */}
           <Ionicons name="logo-google" size={20} color={theme.text} style={{ marginRight: 12 }} />
           <Text style={{ color: theme.text, fontFamily: "Outfit_700Bold", fontSize: 16 }}>
             Continue with Google
